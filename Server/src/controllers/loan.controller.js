@@ -4,7 +4,7 @@ export const addLoan = async (req, res, next) => {
   try {
     const { amount, purpose, hasLoan } = req.body;
 
-    if (!amount || !purpose || !hasLoan) {
+    if (amount == null || purpose == null || hasLoan == null || hasLoan === "") {
       return res.status(400).json({ message: "All fields required" });
     }
 

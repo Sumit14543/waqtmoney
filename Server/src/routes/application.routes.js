@@ -3,6 +3,6 @@ import { applyLoan } from "../controllers/application.controller.js";
 
 const router = express.Router();
 
-router.post("/", applyLoan);
+router.post("/apply", applyLoan);
 
 export default router;

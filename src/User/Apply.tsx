@@ -13,8 +13,8 @@ const Apply = () => {
   const [pan, setPan] = useState("");
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // ✅ PAN FORMAT CONTROL
   const handlePanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.toUpperCase();
     value = value.replace(/[^A-Z0-9]/g, "");
@@ -32,30 +32,50 @@ const Apply = () => {
     setPan(formatted);
   };
 
-  // ✅ VALIDATION
   const validate = () => {
-    if (!salary || Number(salary) < 5000)
-      return "Enter valid salary (min ₹5000)";
+    if (!salary || Number(salary) < 5000) {
+      return "Enter valid salary (min Rs 5000)";
+    }
 
-    if (!/^[6-9]\d{9}$/.test(phone))
+    if (!/^[6-9]\d{9}$/.test(phone)) {
       return "Enter valid 10-digit phone number";
+    }
 
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan))
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
       return "Enter valid PAN (ABCDE1234F)";
+    }
 
-    if (!agree) return "Please accept Terms & Privacy Policy";
+    if (!agree) {
+      return "Please accept Terms & Privacy Policy";
+    }
 
     return "";
   };
 
-  // ✅ FINAL SUBMIT
+  const readJsonResponse = async (res: Response) => {
+    const text = await res.text();
+
+    if (!text) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { message: "Server returned an invalid response" };
+    }
+  };
+
   const handleSubmit = async () => {
-    const err = validate();
-    if (err) {
-      setError(err);
+    if (loading) return;
+
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
+    setLoading(true);
     setError("");
 
     const data = {
@@ -66,10 +86,23 @@ const Apply = () => {
       termsAccepted: agree,
     };
 
-    console.log("📤 Sending Data:", data);
-
     try {
-      const res = await fetch("http://127.0.0.1:5000/apply", {
+      const otpRes = await fetch("http://localhost:5000/api/otp/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: "test@gmail.com" }),
+      });
+
+      const otpResult = await readJsonResponse(otpRes);
+
+      if (!otpRes.ok) {
+        setError(otpResult.message || "Failed to send OTP");
+        return;
+      }
+
+      const appRes = await fetch("http://localhost:5000/api/application/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,18 +110,20 @@ const Apply = () => {
         body: JSON.stringify(data),
       });
 
-      const result = await res.json();
+      const appResult = await readJsonResponse(appRes);
 
-      console.log("📥 Response:", result);
-
-      if (res.ok) {
-        navigate("/user/otp");
-      } else {
-        setError(result.message || "Something went wrong");
+      if (!appRes.ok) {
+        setError(appResult.message || "Application failed");
+        return;
       }
-    } catch (error) {
-      console.error("❌ Fetch Error:", error);
+
+      sessionStorage.setItem("applyPhone", phone);
+      navigate("/user/otp");
+    } catch (fetchError) {
+      console.error("Fetch error:", fetchError);
       setError("Server not reachable");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,50 +132,47 @@ const Apply = () => {
       <Navbar />
 
       <div className="flex flex-1 md:mt-20 items-center justify-center px-4 py-20">
-        <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg p-8">
-
-          <div className="w-14 h-14 bg-[#8048e2]/10 rounded-full flex items-center justify-center mx-auto">
-            <Lock className="w-6 h-6 text-[#8048e2]" />
+        <div className="w-full max-w-xl rounded-2xl bg-white p-8 shadow-lg">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#8048e2]/10">
+            <Lock className="h-6 w-6 text-[#8048e2]" />
           </div>
 
-          <h2 className="text-center text-xl font-semibold mt-4 text-gray-900">
+          <h2 className="mt-4 text-center text-xl font-semibold text-gray-900">
             Payday Loan Application
           </h2>
 
-          <p className="text-center text-sm text-gray-500 mb-6">
+          <p className="mb-6 text-center text-sm text-gray-500">
             Complete your application in just a few steps
           </p>
 
-          {error && (
-            <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-          )}
+          {error && <p className="mb-4 text-center text-sm text-red-500">{error}</p>}
 
-          <div className="grid md:grid-cols-2 gap-4">
-
-            {/* Employment */}
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
               <label className="text-sm font-semibold text-gray-700">
                 Employment Status *
               </label>
 
-              <div className="flex gap-3 mt-2">
-                <button type="button"
+              <div className="mt-2 flex gap-3">
+                <button
+                  type="button"
                   onClick={() => setEmployment("salaried")}
-                  className={`flex-1 py-2 rounded-lg text-sm border ${
+                  className={`flex-1 rounded-lg border py-2 text-sm ${
                     employment === "salaried"
-                      ? "bg-[#8048e2] text-white border-none"
-                      : "bg-white border-gray-200"
+                      ? "border-none bg-[#8048e2] text-white"
+                      : "border-gray-200 bg-white"
                   }`}
                 >
                   Salaried
                 </button>
 
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => setEmployment("self")}
-                  className={`flex-1 py-2 rounded-lg text-sm border ${
+                  className={`flex-1 rounded-lg border py-2 text-sm ${
                     employment === "self"
-                      ? "bg-[#8048e2] text-white border-none"
-                      : "bg-white border-gray-200"
+                      ? "border-none bg-[#8048e2] text-white"
+                      : "border-gray-200 bg-white"
                   }`}
                 >
                   Self Employed
@@ -148,62 +180,56 @@ const Apply = () => {
               </div>
             </div>
 
-            {/* Salary */}
             <div>
               <label className="text-sm font-semibold text-gray-700">
                 Monthly Salary *
               </label>
 
-              <div className="flex items-center border rounded-lg mt-1 h-11">
-                <span className="px-3 text-gray-400 border-r">₹</span>
+              <div className="mt-1 flex h-11 items-center rounded-lg border">
+                <span className="border-r px-3 text-gray-400">Rs</span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   value={salary}
-                  onChange={(e) => setSalary(e.target.value)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, "");
+                    setSalary(raw);
+                  }}
                   placeholder="Enter amount"
                   className="w-full px-3 outline-none"
                 />
               </div>
             </div>
 
-            {/* Phone */}
             <div>
-              <label className="text-sm font-semibold text-gray-700">
-                Phone *
-              </label>
+              <label className="text-sm font-semibold text-gray-700">Phone *</label>
 
-              <div className="flex items-center border rounded-lg mt-1 h-11">
-                <span className="px-2 text-gray-400 border-r">+91</span>
+              <div className="mt-1 flex h-11 items-center rounded-lg border">
+                <span className="border-r px-2 text-gray-400">+91</span>
                 <input
                   type="text"
                   value={phone}
-                  onChange={(e) =>
-                    setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))
-                  }
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   placeholder="Enter number"
                   className="w-full px-2 outline-none"
                 />
               </div>
             </div>
 
-            {/* PAN */}
             <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700">
-                PAN Card *
-              </label>
+              <label className="text-sm font-semibold text-gray-700">PAN Card *</label>
 
               <input
                 type="text"
                 value={pan}
                 onChange={handlePanChange}
                 placeholder="ABCDE1234F"
-                className="w-full mt-1 h-11 border rounded-lg px-3 outline-none"
+                className="mt-1 h-11 w-full rounded-lg border px-3 outline-none"
               />
             </div>
           </div>
 
-          {/* Checkbox */}
-          <div className="flex items-start gap-2 mt-5 text-sm text-gray-500">
+          <div className="mt-5 flex items-start gap-2 text-sm text-gray-500">
             <input
               type="checkbox"
               checked={agree}
@@ -216,15 +242,14 @@ const Apply = () => {
             </p>
           </div>
 
-          {/* Submit */}
           <button
             type="button"
             onClick={handleSubmit}
-            className="w-full mt-6 py-3 rounded-lg text-sm font-medium bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-white"
+            disabled={loading}
+            className="mt-6 w-full rounded-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4] py-3 text-sm font-medium text-white disabled:opacity-60"
           >
-            Send OTP →
+            {loading ? "Sending..." : "Send OTP"}
           </button>
-
         </div>
       </div>
 

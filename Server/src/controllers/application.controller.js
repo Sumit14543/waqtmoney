@@ -1,33 +1,19 @@
-import db from "../config/db.js";
+import { createApplication } from "../services/application.service.js";
 
 export const applyLoan = async (req, res, next) => {
   try {
-    const { employment, salary, phone, pan, termsAccepted } = req.body;
+    console.log("📥 Incoming Data:", req.body);
 
-    if (!employment || !salary || !phone || !pan || !termsAccepted) {
-      return res.status(400).json({ message: "All fields required" });
-    }
+    const result = await createApplication(req.body);
 
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    const phoneRegex = /^[6-9]\d{9}$/;
+    console.log(result);
 
-    if (!panRegex.test(pan)) {
-      return res.status(400).json({ message: "Invalid PAN" });
-    }
-
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: "Invalid Phone" });
-    }
-
-    const [result] = await db.execute(
-      "INSERT INTO applications (employment, salary, phone, pan, termsAccepted) VALUES (?, ?, ?, ?, ?)",
-      [employment, salary, phone, pan, termsAccepted]
-    );
-
-    res.json({
+    res.status(200).json({
+      success: true,
       message: "Application submitted",
-      id: result.insertId,
+      data: result,
     });
+
   } catch (err) {
     next(err);
   }
