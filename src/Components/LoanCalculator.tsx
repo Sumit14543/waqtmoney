@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
-import { Slider } from "@/components/ui/slider";
-import { Button } from "@/components/ui/button";
+import { Slider } from "@/Components/ui/slider";
+import { Button } from "@/Components/ui/button";
 import { CheckCircle2, ArrowRight } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 

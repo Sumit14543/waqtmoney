@@ -1,7 +1,7 @@
-import Navbar from "@/components/Navbar";
+import Navbar from "@/Components/Navbar";
 import { type FormEvent, useState } from "react";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
-import Footer from "@/components/Footer";
+import Footer from "@/Components/Footer";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api";
 

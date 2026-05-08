@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { IdCard } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/Components/Navbar";
+import Footer from "@/Components/Footer";
 import UserProgress from "./UserProgress";
 import { useNavigate } from "react-router-dom";
 

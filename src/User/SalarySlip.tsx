@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { FileText, UploadCloud } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/Components/Navbar";
+import Footer from "@/Components/Footer";
 import { useNavigate } from "react-router-dom";
 import UserProgress from "./UserProgress";
 import SelfieUpload from "./SelfieUpload";

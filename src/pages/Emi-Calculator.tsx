@@ -10,8 +10,8 @@ import {
   Percent,
   ShieldCheck,
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/Components/Navbar";
+import Footer from "@/Components/Footer";
 
 const formatINR = (value: number) =>
   new Intl.NumberFormat("en-IN", {

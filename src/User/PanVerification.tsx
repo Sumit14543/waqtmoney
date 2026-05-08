@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { CreditCard, ShieldCheck } from "lucide-react";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/Components/Navbar";
+import Footer from "@/Components/Footer";
 import { useNavigate } from "react-router-dom";
 import UserProgress from "./UserProgress";
 

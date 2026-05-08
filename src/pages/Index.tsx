@@ -1,16 +1,16 @@
-import Navbar from "@/components/Navbar";
+import Navbar from "@/Components/Navbar";
 import HeroSection from "@/Components/HeroSection";
-// import StatsSection from "@/components/StatsSection";
-import FeaturesSection from "@/components/FeaturesSection";
-import LoanProductsSection from "@/components/LoanProductsSection";
-import StorySection from "@/components/StorySection";
-import StepsSection from "@/components/StepsSection";
-import EligibilitySection from "@/components/EligibilitySection";
-import TestimonialsSection from "@/components/TestimonialsSection";
-import TrustSection from "@/components/TrustSection";
-import FAQSection from "@/components/FAQSection";
-import CTASection from "@/components/CTASection";
-import Footer from "@/components/Footer";
+// import StatsSection from "@/Components/StatsSection";
+import FeaturesSection from "@/Components/FeaturesSection";
+import LoanProductsSection from "@/Components/LoanProductsSection";
+import StorySection from "@/Components/StorySection";
+import StepsSection from "@/Components/StepsSection";
+import EligibilitySection from "@/Components/EligibilitySection";
+import TestimonialsSection from "@/Components/TestimonialsSection";
+import TrustSection from "@/Components/TrustSection";
+import FAQSection from "@/Components/FAQSection";
+import CTASection from "@/Components/CTASection";
+import Footer from "@/Components/Footer";
 import LoanCalculator from "@/Components/LoanCalculator";
 import BorrowSection from "@/Components/BorrowSection";
 

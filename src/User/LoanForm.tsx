@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { BadgeIndianRupee } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import Navbar from "@/Components/Navbar";
+import Footer from "@/Components/Footer";
 
 type ErrorsType = {
   amount?: string;

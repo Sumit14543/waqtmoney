@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Wallet, GraduationCap, Briefcase, Heart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/Components/ui/button";
 import { Link, useLocation } from "react-router-dom";
 const products = [
   {
