@@ -1,12 +1,106 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { IdCard } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import UserProgress from "./UserProgress";
 import { useNavigate } from "react-router-dom";
 
-const KycAadhaar = () => {
-  const [aadhaar, setAadhaar] = useState("");
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api";
 
+const KycAadhaar = () => {
   const navigate = useNavigate();
+  const [aadhaar, setAadhaar] = useState("");
+  const [applicantName, setApplicantName] = useState("");
+  const [aadhaarMasked, setAadhaarMasked] = useState(() => sessionStorage.getItem("aadhaarMasked") || "");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [skipLoading, setSkipLoading] = useState(false);
+
+  useEffect(() => {
+    const aadhaarStatus = new URLSearchParams(window.location.search).get("aadhaar");
+
+    if (aadhaarStatus === "failed") {
+      setError("Aadhaar verification failed. Please try again.");
+    }
+
+    if (aadhaarStatus === "expired") {
+      setError("Aadhaar verification session expired. Please try again.");
+    }
+
+    const applicationId =
+      sessionStorage.getItem("applicationId") || localStorage.getItem("applicationId");
+
+    let savedPan = sessionStorage.getItem("applyPan") || "";
+    const savedPanVerification = sessionStorage.getItem("panVerification");
+    if (savedPanVerification) {
+      try {
+        const panDetails = JSON.parse(savedPanVerification);
+        if (panDetails?.pan) savedPan = String(panDetails.pan);
+        if (panDetails?.name) setApplicantName(String(panDetails.name));
+        if (panDetails?.aadhaarMasked) {
+          setAadhaarMasked(String(panDetails.aadhaarMasked));
+          sessionStorage.setItem("aadhaarMasked", String(panDetails.aadhaarMasked));
+        }
+      } catch {
+        // Ignore malformed session data; application fetch below can still fill the name.
+      }
+    }
+
+    if (/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(savedPan)) {
+      fetch(`${API_BASE_URL}/pan/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pan: savedPan,
+          applicationId,
+          termsAccepted: true,
+        }),
+      })
+        .then(async (response) => {
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) return null;
+          return result;
+        })
+        .then((result) => {
+          const masked = result?.aadhaarMasked || result?.aadhaar_masked || "";
+          const formattedMasked = formatMaskedAadhaar(String(masked));
+
+          if (formattedMasked) {
+            setAadhaarMasked(masked);
+            sessionStorage.setItem("aadhaarMasked", String(masked));
+          }
+        })
+        .catch((fetchError) => {
+          console.error("PAN Aadhaar preview load error:", fetchError);
+        });
+    }
+
+    if (!applicationId) return;
+
+    fetch(`${API_BASE_URL}/application/${applicationId}`)
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) return null;
+        return result.data || {};
+      })
+      .then((data) => {
+        if (!data) return;
+
+        const name = data.full_name || data.name || data.customer_name || "";
+        const masked = data.aadhaar_masked || data.aadhaarMasked || "";
+
+        if (name) setApplicantName(String(name));
+        if (masked) {
+          setAadhaarMasked(String(masked));
+          sessionStorage.setItem("aadhaarMasked", String(masked));
+        }
+      })
+      .catch((fetchError) => {
+        console.error("Aadhaar preview load error:", fetchError);
+      });
+  }, []);
 
   // format: 1234 5678 9012
   const formatAadhaar = (value: string) => {
@@ -19,44 +113,216 @@ const KycAadhaar = () => {
   const handleChange = (value: string) => {
     const cleaned = value.replace(/\D/g, "").slice(0, 12);
     setAadhaar(cleaned);
+    setAadhaarMasked("");
+    setError("");
   };
 
-  const handleSubmit = () => {
-    if (aadhaar.length === 12) {
-      navigate("/user/company-details");
+  const maskAadhaar = (value: string) => {
+    const cleaned = value.replace(/\D/g, "").slice(0, 12);
+    if (cleaned.length < 4) return "";
+    return `XXXX XXXX ${cleaned.slice(-4)}`;
+  };
+
+  const formatMaskedAadhaar = (value: string) => {
+    const cleaned = value.replace(/\s/g, "");
+
+    if (!cleaned) return "";
+
+    if (/^\d{12}$/.test(cleaned)) {
+      return `XXXX XXXX ${cleaned.slice(-4)}`;
+    }
+
+    if (/^X{8}\d{4}$/i.test(cleaned)) {
+      return `XXXX XXXX ${cleaned.slice(-4)}`;
+    }
+
+    if (/^\d{2}X{8}\d{2}$/i.test(cleaned)) {
+      return `${cleaned.slice(0, 2)}XX XXXX XX${cleaned.slice(-2)}`;
+    }
+
+    if (/^X{8,}\d{2}$/i.test(cleaned)) {
+      return `XX XXXX XX${cleaned.slice(-2)}`;
+    }
+
+    if (/^\d+X+\d{1,3}$/i.test(cleaned)) {
+      const lastDigits = cleaned.match(/\d{1,3}$/)?.[0] || "";
+      return cleaned.length >= 4 && lastDigits.length === 2
+        ? `${cleaned.slice(0, 2)}XX XXXX XX${lastDigits}`
+        : "";
+    }
+
+    const trailingDigits = cleaned.match(/\d{4}$/);
+    if (trailingDigits) return `XXXX XXXX ${trailingDigits[0]}`;
+
+    return "";
+  };
+
+  const previewName = applicantName || "Your Name";
+  const previewMaskedAadhaar = maskAadhaar(aadhaar) || formatMaskedAadhaar(aadhaarMasked) || "XXXX XXXX XXXX";
+
+  const readJsonResponse = async (res: Response) => {
+    const text = await res.text();
+
+    if (!text) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { message: "Server returned an invalid response" };
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (loading) return;
+
+    if (aadhaar.length !== 12) {
+      setError("Enter valid 12-digit Aadhaar number");
+      return;
+    }
+
+    const applicationId =
+      sessionStorage.getItem("applicationId") || localStorage.getItem("applicationId");
+
+    if (!applicationId) {
+      setError("Application session not found. Please start again.");
+      return;
+    }
+
+    sessionStorage.setItem("applicationId", applicationId);
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/react-aadhaar/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: applicationId,
+          aadhaar,
+        }),
+      });
+
+      const result = await readJsonResponse(response);
+
+      if (!response.ok) {
+        setError(result.message || "Failed to save Aadhaar");
+        return;
+      }
+
+      const masked = result.data?.aadhaarMasked || "";
+      setAadhaarMasked(masked);
+      sessionStorage.setItem("aadhaarMasked", masked);
+
+      if (result.data?.authorizationUrl) {
+        window.location.href = result.data.authorizationUrl;
+        return;
+      }
+
+      setError("Aadhaar verification URL not received");
+    } catch (fetchError) {
+      console.error("Aadhaar save error:", fetchError);
+      setError("Server not reachable");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkip = async () => {
+    if (skipLoading) return;
+
+    const applicationId =
+      sessionStorage.getItem("applicationId") || localStorage.getItem("applicationId");
+
+    if (!applicationId) {
+      setError("Application session not found. Please start again.");
+      return;
+    }
+
+    sessionStorage.setItem("applicationId", applicationId);
+    setSkipLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/react-aadhaar/skip`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: applicationId,
+        }),
+      });
+
+      const result = await readJsonResponse(response);
+
+      if (!response.ok) {
+        setError(result.message || "Failed to skip Aadhaar verification");
+        return;
+      }
+
+      navigate(result.data?.nextPath || "/user/work-details");
+    } catch (fetchError) {
+      console.error("Aadhaar skip error:", fetchError);
+      setError("Server not reachable");
+    } finally {
+      setSkipLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#f3f6fa]">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md rounded-xl p-6 text-center mt-20">
+      <div className="flex-1 px-3 pb-16 pt-24 sm:px-4 md:pt-28">
+        <UserProgress activeStep={3} />
 
-          <h2 className="text-2xl font-semibold text-[#8048e2]">
-            Complete Your KYC
-          </h2>
+        <div className="mx-auto w-full max-w-[520px] overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white text-center shadow-[0_18px_60px_rgba(32,56,85,0.10)]">
+          <div className="border-b border-[#dfe7f2] px-5 py-7 sm:px-6">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3eaff]">
+              <IdCard className="h-7 w-7 text-[#8048e2]" />
+            </div>
+            <h2 className="mt-4 text-xl font-bold text-[#071d3a]">
+              Complete Your KYC
+            </h2>
+            
+          </div>
 
-          <p className="text-sm text-gray-500 mt-1 mb-4">
-            Your data is completely secure with us
-          </p>
+          <div className="px-4 py-6 sm:px-5">
+            <div className="relative mx-auto mb-5 w-full max-w-[450px] overflow-hidden rounded-lg">
+              <img
+                src="/aadharcard-img.png"
+                alt="Aadhaar Preview"
+                className="w-full object-contain"
+              />
+              <div className="absolute bottom-[37%] left-[31%] right-[6%] text-left min-[420px]:bottom-[39%]">
+                
+                <p className="truncate text-[11px] font-extrabold uppercase leading-tight tracking-wide text-[#172231] min-[420px]:text-sm md:text-[23px]">
+                  {previewName}
+                </p>
+                
+                <p className="mt-1 whitespace-nowrap text-[11px] font-extrabold leading-none tracking-[0.06em] text-gray-500 min-[420px]:mt-2 min-[420px]:text-base md:text-[17px]">
+                  {previewMaskedAadhaar}
+                </p>
+              </div>
+            </div>
 
-          <img
-            src="/aadhar-img.png"
-            alt="Aadhaar Preview"
-            className="w-full h-40 object-cover rounded-lg mb-3"
-          />
-
-          <p className="text-xs text-gray-400 mb-4">
-            Example Aadhaar Number: 1234 5678 9012
-          </p>
+           
+            {error && (
+              <p className="mb-4 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+                {error}
+              </p>
+            )}
 
           {/* INPUT */}
-          <div className="text-left">
-            <label className="text-sm font-medium text-gray-700">
-              Enter Aadhaar Number
-            </label>
+            <div className="text-left">
+              <label className="text-sm font-bold text-[#071d3a]">
+                Enter Your Complete Aadhaar Number
+              </label>
 
             <input
               type="text"
@@ -64,17 +330,28 @@ const KycAadhaar = () => {
               onChange={(e) => handleChange(e.target.value)}
               maxLength={14} // includes spaces
               placeholder="1234 5678 9012"
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg outline-none focus:border-[#8048e2]"
-            />
-          </div>
+              className="mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] px-4 text-sm font-semibold text-[#071d3a] outline-none focus:border-[#8048e2]"
+              />
+            </div>
 
           {/* BUTTON */}
           <button
             onClick={handleSubmit}
-            className="w-full mt-5 py-3 text-white rounded-lg font-medium bg-gradient-to-r from-[#8048e2] to-[#bd56e4] hover:opacity-90 transition"
+            disabled={loading || skipLoading}
+            className="mt-5 h-[52px] w-full rounded-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-sm font-bold text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)] transition hover:opacity-90 disabled:opacity-60"
           >
-            Continue
+            {loading ? "Saving..." : "Continue"}
           </button>
+
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={loading || skipLoading}
+            className="mt-3 h-[52px] w-full rounded-lg border border-[#d8c5ff] bg-white text-sm font-bold text-[#8048e2] transition hover:bg-[#f7f1ff] disabled:opacity-60"
+          >
+            {skipLoading ? "Skipping..." : "Skip Aadhaar for now"}
+            </button>
+          </div>
 
         </div>
       </div>

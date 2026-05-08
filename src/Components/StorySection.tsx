@@ -23,7 +23,7 @@ const StorySection = () => {
               Empowering dreams, Strengthening bonds.
             </h2>
             <p className="text-primary-foreground/80 leading-relaxed">
-              PaisaBoxx is a customer-centric company committed to making credit simple, fast and transparent.
+              Waqt Money is a customer-centric company committed to making credit simple, fast and transparent.
               Our goal is to support individuals' financial freedom by providing easy access to funds when they need it most.
             </p>
           </motion.div>

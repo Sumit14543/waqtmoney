@@ -10,6 +10,7 @@ import About from "./pages/About-us.tsx";
 import Faqs from "./pages/Faqs.tsx";
 import Contact from "./pages/Contact.tsx";
 import Policies from "./pages/Policies.tsx";
+import EmiCalculator from "./pages/Emi-Calculator.tsx";
 import Login from "./User/Login.tsx";
 import Apply from "./User/Apply.tsx";
 import MobileOtp from "./User/MobileOtp.tsx";
@@ -19,8 +20,14 @@ import PanVerification from "./User/PanVerification.tsx";
 import KycAadhaar from "./User/KycAadhaar.tsx";
 import CompanyDetails from "./User/CompanyDetails.tsx";
 import BankDetails from "./User/BankDetails.tsx";
+import References from "./User/References.tsx";
 import SalarySlip from "./User/SalarySlip.tsx";
+import CustomerVideoKYC from "./User/CustomerVideoKYC.tsx";
 import LoanStatus from "./User/LoanStatus.tsx";
+import PrivacyPolicy from "./pages/Privacy-Policies.tsx";
+import TermsConditions from "./pages/Term-Conditions.tsx";
+import GrievanceRedressal from "./pages/Grievance-Redressal.tsx";
+import FairPracticesCode from "./pages/Fair-Practices.tsx";
 
 const queryClient = new QueryClient();
 
@@ -32,13 +39,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
           <Route path="/services" element={<Services/>} />
           <Route path="/About" element={<About/>} />
           <Route path="/Faqs" element={<Faqs/>} />
+          <Route path="/Emi-Calculator" element={<EmiCalculator />} />
           <Route path="/Contact" element={<Contact/>} />
           <Route path="/Policies" element={<Policies/>} />
+          <Route path="/policies" element={<Policies/>} />
+          <Route path="/privacy-policy" element={<Policies/>} />
 
           <Route path="/login" element={<Login />} />
 
@@ -51,13 +59,21 @@ const App = () => (
             {/* KYC FLOW */}
             <Route path="/user/pan-verification" element={<PanVerification />} />
             <Route path="/user/kyc-aadhaar" element={<KycAadhaar />} />
+            <Route path="/user/work-details" element={<CompanyDetails/>} />
             <Route path="/user/company-details" element={<CompanyDetails/>} />
             <Route path="/user/bank-details" element={<BankDetails />} />
+            <Route path="/user/references" element={<References />} />
             <Route path="/user/salary-slip" element={<SalarySlip />} />
+            <Route path="/user/customer-video-kyc" element={<CustomerVideoKYC />} />
 
             {/* FINAL STATUS */}
             <Route path="/user/loan-status" element={<LoanStatus />} />
+            <Route path="*" element={<NotFound />} />
 
+            <Route path="/Privacy-Policies"  element={<PrivacyPolicy/>}/>
+            <Route path="/terms-conditions" element={<TermsConditions />} />
+            <Route path="/grievance-redressal" element={<GrievanceRedressal />} />
+            <Route path="/fair-practices-code" element={<FairPracticesCode />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

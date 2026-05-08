@@ -1,5 +1,37 @@
 import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
+import { BadgeCheck, CheckCheck, FileText, Wallet } from "lucide-react";
+
+const loanProcessSteps = [
+  {
+    title: "Submit Application",
+    description:
+      "Fill out our simple online form with basic details and required documents.",
+    icon: FileText,
+    color: "bg-red-500",
+  },
+  {
+    title: "Document Verification",
+    description:
+      "Our team verifies your documents and assesses your loan eligibility.",
+    icon: BadgeCheck,
+    color: "bg-green-600",
+  },
+  {
+    title: "Loan Approval",
+    description:
+      "Receive approval notification with loan amount and terms confirmation.",
+    icon: CheckCheck,
+    color: "bg-teal-600",
+  },
+  {
+    title: "Fund Disbursement",
+    description:
+      "Funds are transferred directly to your bank account after e-signing.",
+    icon: Wallet,
+    color: "bg-blue-600",
+  },
+];
 
 export default function About() {
   return (
@@ -11,9 +43,9 @@ export default function About() {
         {/* Heading */}
         <div className="text-center mb-16 px-4">
           <h2 className="text-3xl md:text-5xl font-bold text-slate-800">
-            About <span className="text-indigo-600">GeetPay</span>
+            About <span className="text-primary">Waqt Money </span>
           </h2>
-          <div className="w-20 h-1 bg-indigo-600 mx-auto mt-4 rounded-full"></div>
+         
 
           <p className="mt-5 text-base md:text-lg text-slate-600 max-w-2xl mx-auto">
             Your trusted partner for quick and hassle-free payday loans when you need instant cash support.
@@ -27,8 +59,8 @@ export default function About() {
           <div className="relative w-full max-w-md lg:max-w-lg">
             <img
               className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover rounded-3xl shadow-xl"
-              src="https://images.unsplash.com/photo-1531497865144-0464ef8fb9a9?q=80&w=600"
-              alt="GeetPay Payday Loan"
+              src="about-img.jpg"
+              alt="WaqtMoney  Payday Loan"
             />
 
             {/* Floating Card */}
@@ -67,7 +99,7 @@ export default function About() {
             <div className="w-24 h-1 mt-4 mx-auto lg:mx-0 rounded-full bg-gradient-to-r from-indigo-600 to-purple-400"></div>
 
             <p className="mt-6 text-sm md:text-lg text-slate-600 leading-relaxed">
-              GeetPay provides quick and easy payday loans to salaried individuals across India.
+              WaqtMoney  provides quick and easy payday loans to salaried individuals across India.
               Whether it's an emergency expense or a temporary cash shortage, we help you get funds instantly.
             </p>
 
@@ -83,20 +115,89 @@ export default function About() {
 
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 mt-8 justify-center lg:justify-start">
-              <a
-                href="#"
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-full text-sm font-medium shadow-md transition text-center"
-              >
-                Apply Now
-              </a>
+              
 
-              <a
-                href="#"
-                className="border border-slate-300 px-6 py-3 rounded-full text-sm font-medium hover:bg-slate-100 transition text-center"
-              >
-                Check Eligibility
-              </a>
+             
             </div>
+          </div>
+        </div>
+      </section>
+
+      
+      <section className="bg-[linear-gradient(135deg,#f8fafc,#fff7ed)] px-4 py-16 md:py-20">
+        <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          <div className="order-2 text-center lg:order-1 lg:text-left">
+            <span className="inline-flex rounded-full bg-orange-50 px-4 py-2 text-xs font-bold uppercase tracking-wide text-orange-500">
+              Fast Funding
+            </span>
+
+            <h2 className="mt-4 text-3xl font-bold leading-tight text-slate-950 md:text-4xl">
+              Your Dreams,{" "}
+              <span className="text-purple-600">Funded Fast.</span>
+            </h2>
+
+            <div className="mx-auto mt-4 h-1 w-24 rounded-full bg-gradient-to-r from-orange-400 to-purple-600 lg:mx-0" />
+
+            <p className="mt-6 text-sm leading-7 text-slate-600 md:text-base">
+              Life is full of unexpected moments, and when they strike, you need
+              financial support you can rely on. WaqtMoney provides quick,
+              hassle-free loans designed to give you access to funds without the
+              stress of paperwork.
+            </p>
+
+            <p className="mt-4 text-sm leading-7 text-slate-600 md:text-base">
+              From instant approvals to direct transfers, every step is crafted
+              for your convenience. With simplicity, transparency, and
+              flexibility at the core, WaqtMoney ensures help reaches you
+              exactly when you need it.
+            </p>
+
+           
+          </div>
+
+          <div className="order-1 overflow-hidden rounded-2xl border border-orange-100 shadow-xl shadow-orange-100/60 lg:order-2">
+            <img
+              src="/about1-img.jpg"
+              alt="Waqt Money quick funding discussion"
+              className="h-[280px] w-full object-cover sm:h-[360px] lg:h-[430px]"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="processLoan bg-white px-4 py-16 md:py-20">
+        <div className="mx-auto max-w-7xl text-center">
+          <h2 className="text-3xl font-bold text-slate-950 md:text-5xl">
+            Payday Loan <span className="text-black">Process</span>
+          </h2>
+
+          <div className="relative mx-auto mt-20 grid gap-12 md:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+            <div className="absolute left-[8%] right-[8%] top-9 hidden h-1.5 rounded-full bg-gradient-to-r from-purple-600 to-teal-400 lg:block" />
+            <div className="absolute left-1/2 top-0 hidden h-full w-1 -translate-x-1/2 rounded-full bg-gradient-to-b from-purple-600 to-teal-400 max-md:block" />
+
+            {loanProcessSteps.map((step) => {
+              const Icon = step.icon;
+
+              return (
+                <div
+                  key={step.title}
+                  className="relative z-10 mx-auto w-full max-w-[320px] rounded-xl rounded-bl-[72px] rounded-tr-[72px] border-2 border-orange-400 bg-white px-5 pb-7 pt-16 text-center shadow-lg shadow-slate-200/70 transition duration-300 hover:-translate-y-1"
+                >
+                  <span
+                    className={`absolute left-1/2 top-0 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-white shadow-[0_0_0_3px_#e2e8f0] ${step.color}`}
+                  >
+                    <Icon className="h-7 w-7" />
+                  </span>
+
+                  <h3 className="text-lg font-bold text-slate-950">
+                    {step.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-600">
+                    {step.description}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

@@ -1,37 +1,45 @@
 const TestimonialsSection = () => {
-    const cardsData = [
-        {
-            image: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200',
-            name: 'Rahul Sharma',
-            handle: 'Delhi',
-            rating: 5,
-            review: 'Geet Pay ne mujhe emergency me instant salary advance diya. Process bahut fast aur easy tha.'
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200',
-            name: 'Priya Verma',
-            handle: 'Noida',
-            rating: 4,
-            review: 'Mujhe bina kisi tension ke salary par loan mil gaya. Documentation bhi simple tha.'
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=200&auto=format&fit=crop&q=60',
-            name: 'Amit Singh',
-            handle: 'Gurgaon',
-            rating: 5,
-            review: 'Instant approval aur quick disbursal ne meri financial problem solve kar di.'
-        },
-        {
-            image: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=200&auto=format&fit=crop&q=60',
-            name: 'Neha Gupta',
-            handle: 'Faridabad',
-            rating: 4,
-            review: 'Geet Pay trustworthy hai. Transparent charges aur fast service mili.'
-        },
-    ];
+  const cardsData = [
+    {
+        image: 'testimonals-img-1.jpg',
+        name: 'Rahul Sharma',
+        handle: 'Delhi',
+        rating: 5,
+        review: 'Waqt Money provided me with an instant salary advance during an emergency. The process was very fast and easy.'
+    },
+    {
+        image: 'testimonals-img-3.jpg',
+        name: 'Priya Verma',
+        handle: 'Noida',
+        rating: 4,
+        review: 'I got a loan on my salary without any hassle. The documentation process was also simple.'
+    },
+    {
+        image: 'testimonal-img-2.jpg',
+        name: 'Amit Singh',
+        handle: 'Gurgaon',
+        rating: 5,
+        review: 'Instant approval and quick disbursal solved my financial problem.'
+    },
+    {
+        image: 'testimonals-img-4.jpg',
+        name: 'Neha Gupta',
+        handle: 'Faridabad',
+        rating: 4,
+        review: 'Waqt Money Pay is trustworthy. I received transparent charges and fast service.'
+    },
+];
 
     // ⭐ Star Component
-    const StarRating = ({ rating }) => {
+    type TestimonialCard = {
+        image: string;
+        name: string;
+        handle: string;
+        rating: number;
+        review: string;
+    };
+
+    const StarRating = ({ rating }: { rating: number }) => {
         return (
             <div className="flex gap-1 mt-2">
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -47,8 +55,8 @@ const TestimonialsSection = () => {
         );
     };
 
-    const CreateCard = ({ card }) => (
-        <div className="p-6 rounded-2xl mx-5 shadow-md hover:shadow-2xl transition-all duration-300 w-96 shrink-0 bg-white">
+    const CreateCard = ({ card }: { card: TestimonialCard }) => (
+        <div className="p-5 sm:p-6 rounded-2xl mx-3 sm:mx-5 shadow-md hover:shadow-2xl transition-all duration-300 w-[84vw] max-w-[360px] sm:w-96 sm:max-w-none shrink-0 bg-white">
             
             <div className="flex gap-3 items-center">
                 <img className="w-14 h-14 rounded-full object-cover" src={card.image} alt="User" />
@@ -75,10 +83,10 @@ const TestimonialsSection = () => {
 
                 <div className="text-center mb-12">
                     <h2 className="text-4xl md:text-5xl font-bold mb-4">
-                        Geet Pay <span className="text-purple-600">Customers Say</span>
+                        Waqt Money <span className="text-purple-600">Customers Say</span>
                     </h2>
                     <p className="text-gray-500 text-lg">
-                        Real experiences of people who used Geet Pay for instant salary loans.
+                        Real experiences of people who used Waqt Money for instant salary loans.
                     </p>
                 </div>
 
@@ -89,16 +97,22 @@ const TestimonialsSection = () => {
                     }
 
                     .marquee-inner {
-                        animation: marqueeScroll 30s linear infinite;
+                        animation: marqueeScroll 24s linear infinite;
                     }
 
                     .marquee-reverse {
                         animation-direction: reverse;
                     }
+
+                    @media (max-width: 640px) {
+                        .marquee-inner {
+                            animation-duration: 20s;
+                        }
+                    }
                 `}</style>
 
                 <div className="w-full overflow-hidden relative">
-                    <div className="absolute left-0 top-0 h-full w-24 z-10 bg-gradient-to-r from-gray-50 to-transparent"></div>
+                    <div className="absolute left-0 top-0 h-full w-8 sm:w-24 z-10 bg-gradient-to-r from-slate-50/70 sm:from-slate-50 to-transparent pointer-events-none"></div>
 
                     <div className="marquee-inner flex min-w-[200%] pt-8 pb-6">
                         {[...cardsData, ...cardsData].map((card, index) => (
@@ -106,11 +120,11 @@ const TestimonialsSection = () => {
                         ))}
                     </div>
 
-                    <div className="absolute right-0 top-0 h-full w-24 z-10 bg-gradient-to-l from-gray-50 to-transparent"></div>
+                    <div className="absolute right-0 top-0 h-full w-8 sm:w-24 z-10 bg-gradient-to-l from-slate-50/70 sm:from-slate-50 to-transparent pointer-events-none"></div>
                 </div>
 
                 <div className="w-full overflow-hidden relative mt-8">
-                    <div className="absolute left-0 top-0 h-full w-24 z-10 bg-gradient-to-r from-gray-50 to-transparent"></div>
+                    <div className="absolute left-0 top-0 h-full w-8 sm:w-24 z-10 bg-gradient-to-r from-slate-50/70 sm:from-slate-50 to-transparent pointer-events-none"></div>
 
                     <div className="marquee-inner marquee-reverse flex min-w-[200%] pt-8 pb-6">
                         {[...cardsData, ...cardsData].map((card, index) => (
@@ -118,7 +132,7 @@ const TestimonialsSection = () => {
                         ))}
                     </div>
 
-                    <div className="absolute right-0 top-0 h-full w-24 z-10 bg-gradient-to-l from-gray-50 to-transparent"></div>
+                    <div className="absolute right-0 top-0 h-full w-8 sm:w-24 z-10 bg-gradient-to-l from-slate-50/70 sm:from-slate-50 to-transparent pointer-events-none"></div>
                 </div>
 
             </div>

@@ -1,21 +1,145 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { CreditCard, ShieldCheck } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useNavigate } from "react-router-dom";
+import UserProgress from "./UserProgress";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api";
+
+const getApplicationId = () =>
+  sessionStorage.getItem("applicationId") || localStorage.getItem("applicationId");
+
+type PanErrors = {
+  pan?: string;
+  name?: string;
+  dob?: string;
+  submit?: string;
+};
 
 const PanVerification = () => {
-  const [pan, setPan] = useState("");
+  const [pan, setPan] = useState(() => sessionStorage.getItem("applyPan") ?? "");
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
-  const [terms, setTerms] = useState(false);
-  const [errors, setErrors] = useState<any>({});
+  const [fatherName, setFatherName] = useState("");
+  const [gender, setGender] = useState("");
+  const [errors, setErrors] = useState<PanErrors>({});
+  const [loading, setLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const navigate = useNavigate();
 
-  // ✅ STRICT PAN FORMAT
   const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 
-  // 🔥 STRICT INPUT CONTROLLER
+  const formatDisplayDate = (date: string) => {
+    if (!date) return "-";
+
+    const [year, month, day] = date.split("-");
+    if (year && month && day) return `${day}/${month}/${year}`;
+
+    return date;
+  };
+
+  const findValueByKeys = (source: any, keys: string[]): string => {
+    if (!source || typeof source !== "object") return "";
+
+    const normalizeKey = (key: string) => key.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const normalizedKeys = keys.map(normalizeKey);
+
+    for (const [key, value] of Object.entries(source)) {
+      if (normalizedKeys.includes(normalizeKey(key)) && value) {
+        return String(value);
+      }
+    }
+
+    for (const value of Object.values(source)) {
+      const nestedValue = findValueByKeys(value, keys);
+      if (nestedValue) return nestedValue;
+    }
+
+    return "";
+  };
+
+  const getFatherNameFromResult = (result: any) =>
+    findValueByKeys(result, [
+      "father_name",
+      "fatherName",
+      "fathers_name",
+      "father_full_name",
+      "father",
+      "fatherNameOnPan",
+      "father_or_spouse_name",
+      "parent_name",
+      "guardian_name",
+    ]);
+
+  const getGenderFromResult = (result: any) =>
+    findValueByKeys(result, ["gender", "gender_name", "genderName", "sex"]);
+
+  useEffect(() => {
+    if (pan.length === 10 && panRegex.test(pan)) {
+      setLoading(true);
+      setErrors({});
+      fetch(`${API_BASE_URL}/pan/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          pan,
+          applicationId: getApplicationId(),
+        }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.message || "PAN verification failed");
+          return data;
+        })
+        .then((result) => {
+          const verifiedName = result.full_name || result.name || "";
+          const verifiedDob = result.dob || "";
+          const verifiedFatherName = getFatherNameFromResult(result);
+          const verifiedGender = getGenderFromResult(result);
+
+          if (!verifiedName || !verifiedDob) {
+            throw new Error("PAN details not received");
+          }
+
+          setName(verifiedName);
+          setDob(verifiedDob);
+          setFatherName(verifiedFatherName);
+          setGender(verifiedGender);
+          setIsVerified(true);
+          setShowConfirmation(true);
+
+          sessionStorage.setItem(
+            "panVerification",
+            JSON.stringify({
+              pan,
+              name: verifiedName,
+              dob: verifiedDob,
+              fatherName: verifiedFatherName,
+              gender: verifiedGender,
+            })
+          );
+        })
+        .catch((error) => {
+          console.error("PAN verification error:", error);
+          setErrors((prev) => ({ ...prev, pan: error.message || "Server not reachable" }));
+          setIsVerified(false);
+          setShowConfirmation(false);
+          setName("");
+          setDob("");
+          setFatherName("");
+          setGender("");
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [pan]);
+
   const handlePanChange = (value: string) => {
     let input = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
     input = input.slice(0, 10);
@@ -26,165 +150,220 @@ const PanVerification = () => {
       const char = input[i];
 
       if (i < 5) {
-        // first 5 letters only
         if (/[A-Z]/.test(char)) result += char;
       } else if (i < 9) {
-        // next 4 digits only
         if (/[0-9]/.test(char)) result += char;
-      } else {
-        // last letter only
-        if (/[A-Z]/.test(char)) result += char;
+      } else if (/[A-Z]/.test(char)) {
+        result += char;
       }
     }
 
     setPan(result);
+    setIsVerified(false);
+    setShowConfirmation(false);
+    setName("");
+    setDob("");
+    setFatherName("");
+    setGender("");
   };
 
   const validate = () => {
-    let err: any = {};
+    const err: PanErrors = {};
 
-    // PAN
     if (!pan) {
       err.pan = "PAN number is required";
     } else if (!panRegex.test(pan)) {
       err.pan = "Invalid PAN format (ABCDE1234F)";
     }
 
-    // Name
-    if (!name.trim()) {
-      err.name = "Name is required";
-    } else if (name.trim().length < 3) {
-      err.name = "Enter valid full name";
-    }
-
-    // DOB
-    if (!dob) {
-      err.dob = "Date of birth is required";
-    }
-
-    // Terms
-    if (!terms) {
-      err.terms = "Please accept terms & conditions";
-    }
-
     setErrors(err);
     return Object.keys(err).length === 0;
   };
 
-  const handleSubmit = () => {
-    if (validate()) {
-      navigate("/user/kyc-aadhaar");
-    }
+  const handleConfirmPan = () => {
+    if (!validate()) return;
+    navigate("/user/kyc-aadhaar");
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#f3f6fa]">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-lg rounded-xl p-6 text-center">
+      <div className="flex-1 px-4 pb-16 pt-24 md:pt-28">
+        <UserProgress activeStep={2} />
 
-          <h2 className="text-2xl font-semibold text-[#8048e2]">
-            PAN Verification
-          </h2>
+        <div className="flex items-center justify-center">
+          <div className="w-full max-w-[560px] overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_18px_60px_rgba(32,56,85,0.10)]">
+            <div className="border-b border-[#dfe7f2] px-6 py-7 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3eaff]">
+                <CreditCard className="h-7 w-7 text-[#8048e2]" />
+              </div>
 
-          <p className="text-sm text-gray-500 mt-1 mb-4">
-            Your data is completely secure with us
-          </p>
+              <h2 className="mt-4 text-xl font-bold text-[#071d3a]">
+                PAN Verification
+              </h2>
 
-          <img
-            src="/pan-card-img.jpg"
-            alt="PAN Preview"
-            className="w-full h-64 object-cover rounded-lg mb-3"
-          />
+              <p className="mt-2 text-sm font-medium text-[#52657d]">
+                Confirm your PAN details to continue.
+              </p>
+            </div>
 
-          <p className="text-xs text-gray-400 mb-4">
-            Example PAN: ABCDE1234F
-          </p>
+            <div className="px-5 py-7 sm:px-6 sm:py-8 md:px-8">
+              <div className="mb-6 overflow-hidden rounded-xl border border-[#dfe7f2] bg-[#f8fafc]">
+                <img
+                  src="/pan-card-img.jpg"
+                  alt="PAN Preview"
+                  className="h-52 w-full object-cover"
+                />
+              </div>
 
-          {/* PAN INPUT */}
-          <div className="text-left">
-            <label className="text-sm font-medium text-gray-700">
-              PAN Number
-            </label>
+              <div className="grid gap-5">
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    PAN Number <span className="text-red-500">*</span>
+                  </label>
 
-            <input
-              type="text"
-              value={pan}
-              onChange={(e) => handlePanChange(e.target.value)}
-              maxLength={10}
-              placeholder="ABCDE1234F"
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg outline-none focus:border-[#8048e2]"
-            />
+                  <input
+                    type="text"
+                    value={pan}
+                    onChange={(e) => handlePanChange(e.target.value)}
+                    maxLength={10}
+                    placeholder="ABCDE1234F"
+                    className="mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] px-4 text-sm font-semibold uppercase text-[#071d3a] outline-none focus:border-[#8048e2]"
+                    readOnly={loading}
+                  />
 
-            {errors.pan && (
-              <p className="text-red-500 text-sm mt-1">{errors.pan}</p>
-            )}
+                  {errors.pan && <p className="mt-1 text-sm text-red-500">{errors.pan}</p>}
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Name as per PAN <span className="text-red-500">*</span>
+                  </label>
+
+                  <input
+                    type="text"
+                    value={loading ? "Fetching..." : name}
+                    readOnly
+                    placeholder="Fetched after verification"
+                    className={`mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] px-4 text-sm font-semibold text-[#071d3a] outline-none ${loading ? "bg-[#f8fafc] text-[#a0aec0]" : "bg-[#f8fafc]"}`}
+                  />
+
+                  {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
+
+                  <input
+                    type={loading ? "text" : "date"}
+                    value={loading ? "Fetching..." : dob}
+                    readOnly
+                    className={`mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] px-4 text-sm font-semibold text-[#071d3a] outline-none ${loading ? "bg-[#f8fafc] text-[#a0aec0]" : "bg-[#f8fafc]"}`}
+                  />
+
+                  {errors.dob && <p className="mt-1 text-sm text-red-500">{errors.dob}</p>}
+                </div>
+              </div>
+
+              {errors.submit && <p className="mt-3 text-left text-sm text-red-500">{errors.submit}</p>}
+            </div>
+
+            <div className="flex items-center justify-center gap-2 border-t border-[#dfe7f2] bg-[#f8fafc] px-6 py-4 text-xs font-semibold text-[#52657d]">
+              <ShieldCheck className="h-4 w-4 text-[#12b76a]" />
+              Secure PAN verification
+            </div>
           </div>
-
-          {/* NAME */}
-          <div className="text-left mt-4">
-            <label className="text-sm font-medium text-gray-700">
-              Name (As per PAN)
-            </label>
-
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your full name"
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg outline-none focus:border-[#8048e2]"
-            />
-
-            {errors.name && (
-              <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-            )}
-          </div>
-
-          {/* DOB */}
-          <div className="text-left mt-4">
-            <label className="text-sm font-medium text-gray-700">
-              Date of Birth
-            </label>
-
-            <input
-              type="date"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              className="w-full mt-2 p-3 border border-gray-300 rounded-lg outline-none focus:border-[#8048e2]"
-            />
-
-            {errors.dob && (
-              <p className="text-red-500 text-sm mt-1">{errors.dob}</p>
-            )}
-          </div>
-
-          {/* TERMS */}
-          <div className="flex items-center gap-2 mt-4 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              checked={terms}
-              onChange={(e) => setTerms(e.target.checked)}
-            />
-            <span>I accept Terms & Conditions</span>
-          </div>
-
-          {errors.terms && (
-            <p className="text-red-500 text-sm mt-1 text-left">
-              {errors.terms}
-            </p>
-          )}
-
-          {/* BUTTON */}
-          <button
-            onClick={handleSubmit}
-            className="w-full mt-5 py-3 text-white rounded-lg font-medium bg-gradient-to-r from-[#8048e2] to-[#bd56e4]"
-          >
-            Continue
-          </button>
-
         </div>
       </div>
+
+      {showConfirmation && (
+        <div className="fixed inset-0 z-[60] flex items-end justify-center overflow-y-auto bg-black/35 px-0 font-sans backdrop-blur-[1px] sm:items-center sm:px-4 sm:py-6">
+          <div className="max-h-[92vh] w-full max-w-[500px] overflow-y-auto rounded-t-[28px] bg-white px-4 pb-5 pt-5 shadow-xl sm:rounded-[28px] sm:px-6 sm:pb-7 sm:pt-6">
+            <h1 className="mb-4 text-[20px] font-medium text-[#24242c] sm:mb-5 sm:text-[22px]">
+              Is this information correct?
+            </h1>
+
+            <div className="relative overflow-hidden rounded-[16px] border border-[#d9dce8] bg-gradient-to-br from-[#f5f7ff] to-[#edf2ff] px-4 pb-4 pt-4 shadow-[0_3px_0_#9aa9ff] sm:px-5 sm:pb-5">
+              <div className="absolute right-5 top-4 text-center opacity-80">
+                <img
+                  src="/ashoka4-pillers.png"
+                  alt="Ashoka Pillar"
+                  className="mx-auto h-[88px] w-[76px] object-contain"
+                />
+               
+              </div>
+
+              <div className="mb-5 pr-28">
+                <p className="mb-1 text-[14px] font-medium text-[#777b8d]">Name</p>
+                <h2 className="break-words text-[19px] font-extrabold tracking-wide text-[#2c2d36]">
+                  {name || "-"}
+                </h2>
+              </div>
+
+              <div className="mb-5 grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-[14px] font-medium text-[#777b8d]">
+                    PAN Number
+                  </p>
+                  <h3 className="text-[18px] font-extrabold text-[#2c2d36]">
+                    {pan || "-"}
+                  </h3>
+                </div>
+
+                <div className="text-left">
+                  <p className="mb-1 text-[14px] font-medium text-[#777b8d]">
+                    Date of Birth
+                  </p>
+                  <h3 className="text-[18px] font-extrabold text-[#2c2d36]">
+                    {formatDisplayDate(dob)}
+                  </h3>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 border-t-2 border-dashed border-[#d2d6e3] pt-4 min-[420px]:grid-cols-2">
+                <div>
+                  <p className="mb-1 text-[14px] font-medium text-[#777b8d]">
+                    Father Name
+                  </p>
+                  <h3 className="break-words text-[18px] font-extrabold text-[#2c2d36]">
+                    {fatherName || "-"}
+                  </h3>
+                </div>
+
+                <div>
+                  <p className="mb-1 text-[14px] font-medium text-[#777b8d]">
+                    Gender
+                  </p>
+                  <h3 className="text-[18px] font-extrabold text-[#2c2d36]">
+                    {gender || "-"}
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 min-[420px]:flex-row min-[420px]:gap-4">
+              <button
+                type="button"
+                onClick={() => setShowConfirmation(false)}
+                className="h-[52px] w-full rounded-full border-2 border-[#23243d] bg-white text-[18px] font-bold text-[#23243d] min-[420px]:h-[58px] min-[420px]:w-[125px] min-[420px]:text-[20px]"
+              >
+                No
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmPan}
+                className="h-[52px] flex-1 rounded-full bg-[#282b4b] text-[17px] font-bold text-white shadow-md min-[420px]:h-[58px] min-[420px]:text-[19px]"
+              >
+                Confirm and Proceed
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

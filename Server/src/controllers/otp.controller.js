@@ -1,37 +1,46 @@
 import { sendOTPService, verifyOTPService } from "../services/otp.service.js";
 
 export const sendOTP = async (req, res, next) => {
-  const { email } = req.body;
+  const { email, phone } = req.body;
 
   try {
-    if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+    if (!email && !phone) {
+      return res.status(400).json({ success: false, message: "Phone or email is required" });
     }
 
-    await sendOTPService(email);
-    res.json({ success: true, message: "OTP Sent" });
+    const result = await sendOTPService({ email, phone });
+    return res.status(200).json({ success: true, message: "OTP sent", data: result });
   } catch (err) {
-    // next(err);
-    res.json({message: err.message})
+    if (err.statusCode === 429) {
+      return res.status(429).json({ success: false, message: err.message });
+    }
+    if (err.details) {
+      return res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message,
+        details: err.details,
+      });
+    }
+    return next(err);
   }
 };
 
 export const verifyOTP = (req, res) => {
-  const { email, otp } = req.body;
+  const { email, phone, otp } = req.body;
 
-  if (!email || !otp) {
-    return res.status(400).json({ message: "Email and OTP are required" });
+  if ((!email && !phone) || !otp) {
+    return res.status(400).json({ success: false, message: "Phone/email and OTP are required" });
   }
 
-  const result = verifyOTPService(email, otp);
+  const result = verifyOTPService({ email, phone, otp });
 
   if (result === true) {
-    return res.json({ message: "OTP Verified" });
+    return res.status(200).json({ success: true, message: "OTP Verified" });
   }
 
   if (result === "expired") {
-    return res.status(400).json({ message: "OTP Expired" });
+    return res.status(400).json({ success: false, message: "OTP Expired" });
   }
 
-  return res.status(400).json({ message: "Invalid OTP" });
+  return res.status(400).json({ success: false, message: "Invalid OTP" });
 };

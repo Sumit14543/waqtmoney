@@ -1,7 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { ArrowRight, BadgeCheck, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import UserProgress from "./UserProgress";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api";
+
+type BasicErrors = {
+  pincode?: string;
+  city?: string;
+  income?: string;
+  incomeType?: string;
+  submit?: string;
+};
 
 const BasicDetailsForm = () => {
   const navigate = useNavigate();
@@ -9,188 +21,272 @@ const BasicDetailsForm = () => {
   const [employment, setEmployment] = useState("salaried");
   const [pincode, setPincode] = useState("");
   const [city, setCity] = useState("");
-  const [income, setIncome] = useState("");
-  const [incomeType, setIncomeType] = useState("");
-  const [errors, setErrors] = useState<any>({});
+  const [income, setIncome] = useState("10,000");
+  const [incomeType, setIncomeType] = useState("Account");
+  const [errors, setErrors] = useState<BasicErrors>({});
+  const [loading, setLoading] = useState(false);
+  const [fetchingCity, setFetchingCity] = useState(false);
 
-  // ✅ Allow only numbers (common handler)
-  const handleNumberOnly = (value: string) => {
-    return value.replace(/\D/g, ""); // remove non-digits
+  useEffect(() => {
+    if (pincode.length === 6) {
+      setFetchingCity(true);
+      fetch(`${API_BASE_URL}/pan/pincode`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pincode }),
+      })
+        .then(async (res) => {
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            throw new Error(data.message || `API returned ${res.status}`);
+          }
+          return data;
+        })
+        .then((data) => {
+          console.log("Pincode API response:", data);
+          if (data.success && data.city) {
+            setCity(data.city);
+            setErrors((prev) => ({ ...prev, pincode: undefined, city: undefined }));
+          } else {
+            setErrors((prev) => ({ ...prev, pincode: "Invalid pincode" }));
+            setCity("");
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to fetch city:", err);
+          setErrors((prev) => ({ ...prev, pincode: err.message || "Failed to fetch city." }));
+          setCity("");
+        })
+        .finally(() => {
+          setFetchingCity(false);
+        });
+    }
+  }, [pincode]);
+
+  const digitsOnly = (value: string) => value.replace(/\D/g, "");
+
+  const formatAmount = (value: string) => {
+    const raw = digitsOnly(value);
+    if (!raw) return "";
+    return new Intl.NumberFormat("en-IN").format(Number(raw));
   };
+
+  const parseAmount = (value: string) => value.replace(/,/g, "");
 
   const validate = () => {
-    let newErrors: any = {};
+    const nextErrors: BasicErrors = {};
 
-    // Pincode
     if (!pincode) {
-      newErrors.pincode = "Pin code is required";
+      nextErrors.pincode = "Pin code is required";
     } else if (pincode.length !== 6) {
-      newErrors.pincode = "Pin code must be 6 digits";
+      nextErrors.pincode = "Pin code must be 6 digits";
     }
 
-    // City
     if (!city.trim()) {
-      newErrors.city = "City is required";
+      nextErrors.city = "City is required";
     }
 
-    // Income
     if (!income) {
-      newErrors.income = "Monthly income is required";
-    } else if (Number(income) < 5000) {
-      newErrors.income = "Minimum income should be ₹5000";
+      nextErrors.income = "Monthly income is required";
+    } else if (Number(parseAmount(income)) < 5000) {
+      nextErrors.income = "Minimum income should be Rs 5000";
     }
 
-    // Income Type
     if (!incomeType) {
-      newErrors.incomeType = "Select income type";
+      nextErrors.incomeType = "Select income type";
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (loading) return;
+    if (!validate()) return;
 
-    if (validate()) {
+    const applicationId =
+      sessionStorage.getItem("applicationId") || localStorage.getItem("applicationId");
+
+    if (!applicationId) {
+      setErrors({ submit: "Application session not found. Please start again." });
+      return;
+    }
+
+    sessionStorage.setItem("applicationId", applicationId);
+
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/application/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: applicationId,
+          employment,
+          salary: Number(parseAmount(income)),
+          income_received_in: incomeType.toLowerCase(),
+          pincode,
+          city: city.trim(),
+          current_step: "basic_details",
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setErrors({ submit: result.message || "Failed to save basic details" });
+        return;
+      }
+
       navigate("/user/pan-verification");
+    } catch (error) {
+      console.error("Basic details save error:", error);
+      setErrors({ submit: "Server not reachable" });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#f3f6fa]">
       <Navbar />
 
-      <div className="flex-1 flex justify-center px-4 mt-24 mb-10">
+      <div className="flex-1 px-4 pb-16 pt-24 md:pt-28">
+        <UserProgress activeStep={1} />
+
         <form
           onSubmit={handleSubmit}
-          className="max-w-[580px] w-full rounded-xl p-6"
+          className="mx-auto w-full max-w-[480px] overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_18px_60px_rgba(32,56,85,0.10)]"
         >
-          <h2 className="text-center text-[#8048e2] mb-1 text-2xl font-semibold">
-            Submit Basic Details
-          </h2>
+          <div className="border-b border-[#dfe7f2] px-6 py-7 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3eaff]">
+              <BadgeCheck className="h-7 w-7 text-[#8048e2]" />
+            </div>
 
-          <div className="text-center text-sm text-gray-500 mb-5">
-            Your Data is Completely Secure with us
-          </div>
+            <h2 className="mt-4 text-xl font-bold text-[#071d3a]">
+              Basic Details
+            </h2>
 
-          {/* Pin Code */}
-          <label className="text-sm text-gray-700 block mt-4 mb-1">
-            Pin Code
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={6}
-            value={pincode}
-            onChange={(e) =>
-              setPincode(handleNumberOnly(e.target.value))
-            }
-            placeholder="Enter your pin code"
-            className="w-full p-2.5 border rounded-md outline-none focus:border-[#8048e2]"
-          />
-          {errors.pincode && (
-            <p className="text-red-500 text-sm">{errors.pincode}</p>
-          )}
-
-          {/* City */}
-          <label className="text-sm text-gray-700 block mt-4 mb-1">
-            City
-          </label>
-          <input
-            type="text"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            className="w-full p-2.5 border rounded-md outline-none focus:border-[#8048e2]"
-          />
-          {errors.city && (
-            <p className="text-red-500 text-sm">{errors.city}</p>
-          )}
-
-          {/* Employment */}
-          <label className="text-sm text-gray-700 block mt-4 mb-2">
-            Employment Type
-          </label>
-
-          <div className="flex gap-2 flex-wrap">
-            <button
-              type="button"
-              onClick={() => setEmployment("salaried")}
-              className={`flex-1 p-2 border rounded-md ${
-                employment === "salaried"
-                  ? "bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-white"
-                  : ""
-              }`}
-            >
-              Salaried
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setEmployment("self")}
-              className={`flex-1 p-2 border rounded-md ${
-                employment === "self"
-                  ? "bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-white"
-                  : ""
-              }`}
-            >
-              Self-Employed
-            </button>
-          </div>
-
-          {/* Income */}
-          <label className="text-sm text-gray-700 block mt-4 mb-1">
-            Monthly Income
-          </label>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={income}
-            onChange={(e) =>
-              setIncome(handleNumberOnly(e.target.value))
-            }
-            placeholder="Enter your monthly income"
-            className="w-full p-2.5 border rounded-md outline-none focus:border-[#8048e2]"
-          />
-          {errors.income && (
-            <p className="text-red-500 text-sm">{errors.income}</p>
-          )}
-
-          {/* Income Type */}
-          <label className="text-sm text-gray-700 block mt-4 mb-2">
-            Income Received In
-          </label>
-
-          <div className="flex gap-2 flex-wrap">
-            {["Account", "Cash", "Cheque"].map((type) => (
-              <button
-                key={type}
-                type="button"
-                onClick={() => setIncomeType(type)}
-                className={`flex-1 p-2 border rounded-md ${
-                  incomeType === type
-                    ? "bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-white"
-                    : ""
-                }`}
-              >
-                {type}
-              </button>
-            ))}
-          </div>
-
-          {errors.incomeType && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.incomeType}
+            <p className="mt-2 text-sm font-medium text-[#52657d]">
+              Your Data is Completely Secure with us
             </p>
-          )}
+          </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            className="w-full mt-5 p-3 text-white rounded-md text-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4]"
-          >
-            Continue
-          </button>
+          <div className="px-5 py-7 sm:px-7 sm:py-8">
+            {errors.submit && (
+              <p className="mb-5 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
+                {errors.submit}
+              </p>
+            )}
+
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-bold text-[#071d3a]">Pin Code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={pincode}
+                  onChange={(event) => setPincode(digitsOnly(event.target.value).slice(0, 6))}
+                  className="mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] px-4 text-sm font-semibold text-[#071d3a] outline-none focus:border-[#8048e2]"
+                />
+                {errors.pincode && <p className="mt-1 text-sm text-red-500">{errors.pincode}</p>}
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-[#071d3a]">City</label>
+                <input
+                  type="text"
+                  value={fetchingCity ? "Fetching..." : city}
+                  onChange={(event) => setCity(event.target.value)}
+                  className={`mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] px-4 text-sm font-semibold text-[#071d3a] outline-none focus:border-[#8048e2] ${fetchingCity ? "bg-[#f8fafc] text-[#a0aec0]" : ""}`}
+                  readOnly={fetchingCity}
+                />
+                {errors.city && <p className="mt-1 text-sm text-red-500">{errors.city}</p>}
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-[#071d3a]">Employment Type</label>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setEmployment("salaried")}
+                    className={`h-[45px] rounded-lg border text-sm font-bold transition ${
+                      employment === "salaried"
+                        ? "border-[#8048e2] bg-[#8048e2] text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)]"
+                        : "border-[#d8c5ff] bg-white text-[#52657d]"
+                    }`}
+                  >
+                    Salaried
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEmployment("self")}
+                    className={`h-[45px] rounded-lg border text-sm font-bold transition ${
+                      employment === "self"
+                        ? "border-[#8048e2] bg-[#8048e2] text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)]"
+                        : "border-[#d8c5ff] bg-white text-[#52657d]"
+                    }`}
+                  >
+                    Self-Employed
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-[#071d3a]">Monthly Income</label>
+                <div className="mt-2 flex h-[54px] overflow-hidden rounded-lg border border-[#d8c5ff] bg-white focus-within:border-[#8048e2]">
+                  <span className="flex w-[42px] items-center justify-center border-r border-[#d8c5ff] bg-[#f8fafc] text-lg font-semibold text-[#52657d]">
+                    {"\u20b9"}
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={income}
+                    onChange={(event) => setIncome(formatAmount(event.target.value))}
+                    className="min-w-0 flex-1 px-4 text-base font-semibold text-[#071d3a] outline-none"
+                  />
+                </div>
+                {errors.income && <p className="mt-1 text-sm text-red-500">{errors.income}</p>}
+              </div>
+
+              <div>
+                <label className="text-sm font-bold text-[#071d3a]">Income Received In</label>
+                <div className="mt-2 grid grid-cols-1 gap-2 min-[420px]:grid-cols-3 sm:gap-3">
+                  {["Account", "Cash", "Cheque"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setIncomeType(type)}
+                      className={`h-[44px] rounded-lg border text-sm font-bold transition ${
+                        incomeType === type
+                          ? "border-[#8048e2] bg-[#8048e2] text-white"
+                          : "border-[#d8c5ff] bg-white text-[#52657d]"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+                {errors.incomeType && <p className="mt-1 text-sm text-red-500">{errors.incomeType}</p>}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-6 flex h-[52px] w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-sm font-bold text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)] transition hover:opacity-90 disabled:opacity-60"
+            >
+              {loading ? "Saving..." : "Continue"}
+              {!loading && <ArrowRight className="h-4 w-4" />}
+            </button>
+          </div>
         </form>
       </div>
 

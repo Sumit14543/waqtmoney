@@ -1,11 +1,14 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv"
 import loanRoutes from "./routes/loan.routes.js";
 import otpRoutes from "./routes/otp.routes.js";
 import applicationRoutes from "./routes/application.routes.js";
 import { errorHandler } from "./middleware/error.middleware.js";
-dotenv.config()
+import authRoutes from "./routes/auth.routes.js";
+import panRoutes from "./routes/pan.route.js";
+import aadhaarRoutes from "./routes/aadhaar.routes.js";
+import reactAadhaarRoutes from "./routes/reactAadhaar.routes.js";
+
 const app = express();
 
 app.use(cors());
@@ -23,11 +26,10 @@ app.get("/", (req, res) => {
 app.use("/api/loan", loanRoutes);
 app.use("/api/application", applicationRoutes);
 app.use("/api/otp", otpRoutes);
-
-console.log("SMTP_USER:", process.env.SMTP_USER);
-console.log("SMTP_PASS:", process.env.SMTP_PASS ? "EXISTS" : "MISSING");
-console.log("SMTP_HOST:", process.env.SMTP_HOST);
-console.log("SMTP_PORT:", process.env.SMTP_PORT);
+app.use("/api/auth", authRoutes);
+app.use("/api/pan", panRoutes);
+app.use("/api/aadhaar", aadhaarRoutes);
+app.use("/api/react-aadhaar", reactAadhaarRoutes);
 
 app.use(errorHandler);
 

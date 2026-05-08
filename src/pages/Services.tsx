@@ -59,7 +59,7 @@ const Services = () => {
           </h1>
 
           <p className="mt-4 text-lg text-muted-foreground">
-            Geet Pay offers fast, transparent, and stress-free payday loans designed for salaried
+           WaqtMoney offers fast, transparent, and stress-free payday loans designed for salaried
             professionals. Bridge the gap between paydays without the paperwork.
           </p>
         </div>

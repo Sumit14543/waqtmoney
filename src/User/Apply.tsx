@@ -1,48 +1,71 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock } from "lucide-react";
+import { ArrowRightCircle, CalendarDays, ChevronDown, FileText, Lock, Zap } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api";
+
+const steps = [
+  "Basic Details",
+  "PAN Verify",
+  "Aadhaar Verify",
+  "Work Details",
+  "Bank Details",
+  "References",
+  "Upload Docs",
+  "Video KYC",
+];
 
 const Apply = () => {
   const navigate = useNavigate();
 
+  const [showIntro, setShowIntro] = useState(true);
   const [employment, setEmployment] = useState("salaried");
   const [salary, setSalary] = useState("");
+  const [loanAmount, setLoanAmount] = useState("");
+  const [purpose, setPurpose] = useState("Marriage");
+  const [hasLoan, setHasLoan] = useState("no");
   const [phone, setPhone] = useState("");
-  const [pan, setPan] = useState("");
-  const [agree, setAgree] = useState(false);
+  const [email, setEmail] = useState("");
+  const [agree, setAgree] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handlePanChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.toUpperCase();
-    value = value.replace(/[^A-Z0-9]/g, "");
+  const digitsOnly = (value: string) => value.replace(/\D/g, "");
 
-    let formatted = "";
-
-    for (let i = 0; i < value.length && i < 10; i++) {
-      const char = value[i];
-
-      if (i < 5 && /[A-Z]/.test(char)) formatted += char;
-      else if (i >= 5 && i < 9 && /[0-9]/.test(char)) formatted += char;
-      else if (i === 9 && /[A-Z]/.test(char)) formatted += char;
-    }
-
-    setPan(formatted);
+  const formatAmount = (value: string) => {
+    const raw = digitsOnly(value);
+    if (!raw) return "";
+    return new Intl.NumberFormat("en-IN").format(Number(raw));
   };
 
+  const parseAmount = (value: string) => value.replace(/,/g, "");
+
+
   const validate = () => {
-    if (!salary || Number(salary) < 5000) {
+    if (!salary || Number(parseAmount(salary)) < 5000) {
       return "Enter valid salary (min Rs 5000)";
+    }
+
+    if (!loanAmount || Number(parseAmount(loanAmount)) < 1000) {
+      return "Enter valid loan amount";
+    }
+
+    if (!purpose) {
+      return "Please select loan purpose";
+    }
+
+    if (!hasLoan) {
+      return "Please select running loan status";
     }
 
     if (!/^[6-9]\d{9}$/.test(phone)) {
       return "Enter valid 10-digit phone number";
     }
 
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {
-      return "Enter valid PAN (ABCDE1234F)";
+    if (email && !/^\S+@\S+\.\S+$/.test(email)) {
+      return "Enter valid email";
     }
 
     if (!agree) {
@@ -78,36 +101,27 @@ const Apply = () => {
     setLoading(true);
     setError("");
 
-    const data = {
+    const applicationData = {
       employment,
-      salary: Number(salary),
+      salary: Number(parseAmount(salary)),
       phone,
-      pan: pan.toUpperCase(),
+      email: email || undefined,
       termsAccepted: agree,
     };
 
+    const loanData = {
+      amount: Number(parseAmount(loanAmount)),
+      purpose,
+      hasLoan,
+    };
+
     try {
-      const otpRes = await fetch("http://localhost:5000/api/otp/send-otp", {
+      const appRes = await fetch(`${API_BASE_URL}/application/apply`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: "test@gmail.com" }),
-      });
-
-      const otpResult = await readJsonResponse(otpRes);
-
-      if (!otpRes.ok) {
-        setError(otpResult.message || "Failed to send OTP");
-        return;
-      }
-
-      const appRes = await fetch("http://localhost:5000/api/application/apply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+        body: JSON.stringify(applicationData),
       });
 
       const appResult = await readJsonResponse(appRes);
@@ -117,7 +131,67 @@ const Apply = () => {
         return;
       }
 
+      const applicationId = appResult.data?.id;
+
+      if (!applicationId) {
+        setError("Application ID not received from server");
+        return;
+      }
+
+      const loanRes = await fetch(`${API_BASE_URL}/loan/apply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: applicationId,
+          ...loanData,
+        }),
+      });
+
+      const loanResult = await readJsonResponse(loanRes);
+
+      if (!loanRes.ok) {
+        setError(loanResult.message || "Loan details failed");
+        return;
+      }
+
+      const otpRes = await fetch(`${API_BASE_URL}/otp/send-otp`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phone, email: email || undefined }),
+      });
+
+      const otpResult = await readJsonResponse(otpRes);
+
+      if (!otpRes.ok) {
+        const details = Array.isArray(otpResult.details) ? otpResult.details.join(" ") : "";
+        setError(details || otpResult.message || "Failed to send mobile OTP");
+        return;
+      }
+
+      sessionStorage.setItem("applicationId", String(applicationId));
       sessionStorage.setItem("applyPhone", phone);
+      sessionStorage.setItem("otpRequired", "true");
+      sessionStorage.setItem("otpDelivery", otpResult.data?.delivery || "email");
+      sessionStorage.setItem(
+        "otpChannels",
+        JSON.stringify(otpResult.data?.channels || ["Email"])
+      );
+      if (email) {
+        sessionStorage.setItem("applyEmail", email);
+        localStorage.setItem("applyEmail", email);
+      } else {
+        sessionStorage.removeItem("applyEmail");
+        localStorage.removeItem("applyEmail");
+      }
+      sessionStorage.setItem("employment", employment);
+      localStorage.setItem("applicationId", String(applicationId));
+      localStorage.setItem("applyPhone", phone);
+      localStorage.setItem("employment", employment);
+
       navigate("/user/otp");
     } catch (fetchError) {
       console.error("Fetch error:", fetchError);
@@ -127,129 +201,475 @@ const Apply = () => {
     }
   };
 
+  if (showIntro) {
+    const introCards = [
+      {
+        title: "Personal Loan Application",
+        description:
+          "Apply online for a personal loan and get instant approval with a quick, hassle-free process.",
+        icon: Zap,
+        color: "text-orange-500",
+      },
+      {
+        title: "Easy Loan Approval",
+        description:
+          "Get quick approval with minimal paperwork and fast verification when you need funds.",
+        icon: FileText,
+        color: "text-purple-600",
+      },
+      {
+        title: "Flexible Loan Plan",
+        description:
+          "Choose an amount that fits your needs and continue with a simple digital application.",
+        icon: CalendarDays,
+        color: "text-orange-500",
+      },
+    ];
+
+    const infoSections = [
+      {
+        title: "Why Choose Waqt Money",
+        items: [
+          "Loan Amount: From Rs 1,000 up to Rs 2 Lakhs",
+          "Instant Transfer: Get funds directly in your bank account within 24 hours",
+          "Flexible Tenure: Easy repayment options up to 3 months",
+          "100% Online Process: No queues, no visits, no hassle",
+          "Minimal Documentation: Just your PAN and Aadhaar",
+          "No Collateral Required: Completely unsecured loan",
+          "Zero Foreclosure Charges: Repay early anytime with no extra fees",
+        ],
+      },
+      {
+        title: "Example: How Personal Loans Work",
+        intro: "Assuming you borrow Rs 5,00,000 for a tenure of 3 years:",
+        items: [
+          "Loan Amount: Rs 5,00,000",
+          "Processing Fee: 3% of loan amount + 18% GST + Rs 500 stamp duty = Rs 18,200",
+          "Interest Rate: 20% p.a. on reducing principal balance",
+          "Monthly EMI: Rs 18,582",
+          "Total Repayment: Rs 6,68,952",
+          "Total Interest Payable: Rs 1,68,944",
+          "APR: 22.7%",
+        ],
+      },
+      {
+        title: "Personal Loan Eligibility Criteria",
+        items: [
+          "Age: Between 21 and 55 years",
+          "Minimum Monthly Income: Rs 18,000 in metro cities and Rs 15,000 in non-metro cities",
+          "Residency: Must be a resident of India",
+        ],
+      },
+      {
+        title: "Documents Required",
+        items: ["PAN Card", "Aadhaar Card"],
+      },
+      {
+        title: "Waqt Money Charges",
+        items: [
+          "Interest Rate: Starting from 18% p.a.",
+          "Processing Fee: 2% - 10% of loan amount",
+          "Late Payment Fee: Rs 500 per missed EMI",
+          "Bounced Payment Fee: Rs 500",
+          "APR: Starting from 16.75%",
+        ],
+      },
+    ];
+
+    const applicationSteps = [
+      "Fill in your basic details",
+      "Select your desired loan amount and repayment tenure",
+      "Complete verification with required documents",
+      "Receive the money directly in your bank account after approval",
+    ];
+
+    return (
+      <div className="min-h-screen bg-[#f6f4ff]">
+        <Navbar />
+        <main className="px-4 pb-12 pt-24">
+        <div className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-[520px] flex-col overflow-hidden rounded-[28px] bg-white shadow-xl shadow-purple-100/70">
+          <section className="rounded-b-[28px] bg-[linear-gradient(135deg,#f1edff,#fff7ed)] px-6 pb-7 pt-6 text-center">
+            <img
+              src="/waqt-money-logo-img.png"
+              alt="Waqt Money"
+              className="mx-auto h-20 w-auto object-contain sm:h-24"
+            />
+
+            <p className="mx-auto mt-4 max-w-sm text-base font-semibold leading-7 text-slate-950 sm:text-lg">
+              Instant Online Personal Loan for Salaried Employees
+            </p>
+
+            <p className="mt-4 text-sm font-bold text-slate-950">
+              up to{" "}
+              <span className="align-middle text-3xl font-extrabold text-purple-700 sm:text-4xl">
+                Rs 2,00,000
+              </span>
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setShowIntro(false)}
+              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-6 text-base font-bold text-white shadow-lg shadow-purple-200 transition hover:bg-purple-700"
+            >
+              Apply Now
+              <ArrowRightCircle className="h-5 w-5" />
+            </button>
+          </section>
+
+          <section className="flex-1 px-4 py-5">
+            <div className="space-y-4">
+              {introCards.map((card) => {
+                const Icon = card.icon;
+
+                return (
+                  <div
+                    key={card.title}
+                    className="flex gap-4 rounded-xl bg-[#f0f2ff] px-5 py-4 shadow-sm ring-1 ring-purple-50"
+                  >
+                    <span className={`mt-1 shrink-0 ${card.color}`}>
+                      <Icon className="h-6 w-6" />
+                    </span>
+
+                    <div>
+                        <h2 className="text-base font-bold text-slate-950">
+                        {card.title}
+                      </h2>
+                        <p className="mt-1 text-sm leading-6 text-slate-600">
+                        {card.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-purple-100 bg-white p-5 shadow-sm">
+              <h1 className="text-lg font-extrabold text-slate-950">
+                Need Instant Cash?
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Get quick financial help with Waqt Money, your trusted instant
+                personal loan platform. Apply in minutes and get funds directly
+                credited to your bank account. Fast, secure, and hassle-free.
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-5">
+              {infoSections.map((section) => (
+                <div
+                  key={section.title}
+                  className="rounded-2xl border border-slate-100 bg-slate-50/80 p-5"
+                >
+                  <h2 className="text-base font-extrabold text-slate-950">
+                    {section.title}
+                  </h2>
+                  {section.intro && (
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {section.intro}
+                    </p>
+                  )}
+                  <ul className="mt-3 space-y-2">
+                    {section.items.map((item) => (
+                      <li
+                        key={item}
+                        className="flex gap-2 text-sm leading-6 text-slate-600"
+                      >
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-purple-600" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+
+              <div className="rounded-2xl border border-orange-100 bg-orange-50/60 p-5">
+                <h2 className="text-base font-extrabold text-slate-950">
+                  How to Apply for an Instant Personal Loan
+                </h2>
+                <ol className="mt-3 space-y-2">
+                  {applicationSteps.map((step, index) => (
+                    <li
+                      key={step}
+                      className="flex gap-3 text-sm leading-6 text-slate-600"
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-purple-600 text-xs font-bold text-white">
+                        {index + 1}
+                      </span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className="rounded-2xl bg-gradient-to-br from-purple-600 to-orange-400 p-5 text-white shadow-lg shadow-purple-100">
+                <h2 className="text-base font-extrabold">About Waqt Money</h2>
+                <p className="mt-2 text-sm leading-6 text-white/90">
+                  Waqt Money empowers individuals across income groups with
+                  short-term instant cash loans, personal loans, and customized
+                  EMI-based plans through a simple digital process.
+                </p>
+                <div className="mt-4 space-y-2 text-sm font-medium text-white/95">
+                  <p>Telephone: +91 9217086608</p>
+                  <p>Email: support@waqtmoney.com</p>
+                  <p>Visit Us: H-15, Sector 63, Noida, Uttar Pradesh, India</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#f3f6fa]">
       <Navbar />
 
-      <div className="flex flex-1 md:mt-20 items-center justify-center px-4 py-20">
-        <div className="w-full max-w-xl rounded-2xl bg-white p-8 shadow-lg">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#8048e2]/10">
-            <Lock className="h-6 w-6 text-[#8048e2]" />
+      <div className="flex-1 px-3 pb-16 pt-24 sm:px-4 md:pt-28">
+        <div className="mx-auto w-full max-w-[600px]">
+          <div className="mx-auto mb-8 hidden w-full max-w-[900px] items-start md:flex">
+            {steps.map((step, index) => {
+              const isActive = index === 0;
+
+              return (
+                <div key={step} className="relative flex flex-1 flex-col items-center">
+                  {index > 0 && (
+                    <span className="absolute right-1/2 top-[17px] h-px w-full bg-[#d8e1ee]" />
+                  )}
+                  <span
+                    className={`relative z-10 flex h-9 w-9 items-center justify-center rounded-full border-2 text-sm font-semibold ${isActive
+                        ? "border-[#d8c5ff] bg-[#8048e2] text-white shadow-[0_0_0_5px_rgba(128,72,226,0.12)]"
+                        : "border-[#d8e1ee] bg-white text-[#718096]"
+                      }`}
+                  >
+                    {index + 1}
+                  </span>
+                  <span className="mt-2 max-w-[76px] text-center text-[10px] font-semibold uppercase leading-3 text-[#31435d]">
+                    {step}
+                  </span>
+                </div>
+              );
+            })}
           </div>
 
-          <h2 className="mt-4 text-center text-xl font-semibold text-gray-900">
-            Payday Loan Application
-          </h2>
-
-          <p className="mb-6 text-center text-sm text-gray-500">
-            Complete your application in just a few steps
-          </p>
-
-          {error && <p className="mb-4 text-center text-sm text-red-500">{error}</p>}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700">
-                Employment Status *
-              </label>
-
-              <div className="mt-2 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setEmployment("salaried")}
-                  className={`flex-1 rounded-lg border py-2 text-sm ${
-                    employment === "salaried"
-                      ? "border-none bg-[#8048e2] text-white"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  Salaried
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setEmployment("self")}
-                  className={`flex-1 rounded-lg border py-2 text-sm ${
-                    employment === "self"
-                      ? "border-none bg-[#8048e2] text-white"
-                      : "border-gray-200 bg-white"
-                  }`}
-                >
-                  Self Employed
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700">
-                Monthly Salary *
-              </label>
-
-              <div className="mt-1 flex h-11 items-center rounded-lg border">
-                <span className="border-r px-3 text-gray-400">Rs</span>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={salary}
-                  onChange={(e) => {
-                    const raw = e.target.value.replace(/\D/g, "");
-                    setSalary(raw);
-                  }}
-                  placeholder="Enter amount"
-                  className="w-full px-3 outline-none"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700">Phone *</label>
-
-              <div className="mt-1 flex h-11 items-center rounded-lg border">
-                <span className="border-r px-2 text-gray-400">+91</span>
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  placeholder="Enter number"
-                  className="w-full px-2 outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="text-sm font-semibold text-gray-700">PAN Card *</label>
-
-              <input
-                type="text"
-                value={pan}
-                onChange={handlePanChange}
-                placeholder="ABCDE1234F"
-                className="mt-1 h-11 w-full rounded-lg border px-3 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="mt-5 flex items-start gap-2 text-sm text-gray-500">
-            <input
-              type="checkbox"
-              checked={agree}
-              onChange={() => setAgree(!agree)}
-              className="mt-1 accent-[#8048e2]"
-            />
-            <p>
-              I accept the <span className="text-[#8048e2]">Terms</span> and{" "}
-              <span className="text-[#8048e2]">Privacy Policy</span>
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={loading}
-            className="mt-6 w-full rounded-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4] py-3 text-sm font-medium text-white disabled:opacity-60"
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+            className="mx-auto w-full max-w-[760px] overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_18px_60px_rgba(32,56,85,0.10)]"
           >
-            {loading ? "Sending..." : "Send OTP"}
-          </button>
+            <div className="border-b border-[#dfe7f2] px-5 py-7 text-center sm:px-6 md:px-10">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3eaff]">
+                <Lock className="h-7 w-7 text-[#8048e2]" />
+              </div>
+
+              <h2 className="mt-4 text-xl font-bold text-[#071d3a]">
+                Apply for Payday Loan
+              </h2>
+
+              <p className="mt-2 text-sm font-medium text-[#52657d]">
+                Get started in minutes with a few simple steps.
+              </p>
+            </div>
+
+            <div className="px-5 py-7 sm:px-6 sm:py-8 md:px-10 md:py-10">
+              {error && (
+                <p className="mb-5 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
+                  {error}
+                </p>
+              )}
+
+              <div className="grid gap-x-5 gap-y-6 md:grid-cols-2">
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Employment Status <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEmployment("salaried")}
+                      className={`h-[47px] rounded-lg border text-sm font-bold transition ${employment === "salaried"
+                          ? "border-[#8048e2] bg-[#8048e2] text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)]"
+                          : "border-[#d8c5ff] bg-white text-[#62718a]"
+                        }`}
+                    >
+                      Salaried
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEmployment("self")}
+                      className={`h-[47px] rounded-lg border text-sm font-bold transition ${employment === "self"
+                          ? "border-[#8048e2] bg-[#8048e2] text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)]"
+                          : "border-[#d8c5ff] bg-white text-[#62718a]"
+                        }`}
+                    >
+                      Self Employed
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Monthly Salary <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="mt-3 flex h-[54px] overflow-hidden rounded-lg border border-[#d9e3f0] bg-white focus-within:border-[#15833d]">
+                    <span className="flex w-[42px] items-center justify-center border-r border-[#d9e3f0] bg-[#f8fafc] text-lg font-semibold text-[#52657d]">
+                      {"\u20b9"}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={salary}
+                      onChange={(e) => setSalary(formatAmount(e.target.value))}
+                      placeholder="10,000"
+                      className="min-w-0 flex-1 px-4 text-base font-semibold text-[#071d3a] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Loan Amount Required <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="mt-3 flex h-[54px] overflow-hidden rounded-lg border border-[#d8c5ff] bg-white focus-within:border-[#8048e2]">
+                    <span className="flex w-[42px] items-center justify-center border-r border-[#d9e3f0] bg-[#f8fafc] text-lg font-semibold text-[#52657d]">
+                      {"\u20b9"}
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={loanAmount}
+                      onChange={(e) => setLoanAmount(formatAmount(e.target.value))}
+                      placeholder="5,000"
+                      className="min-w-0 flex-1 px-4 text-base font-semibold text-[#071d3a] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Purpose of Loan <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="relative mt-3">
+                    <select
+                      value={purpose}
+                      onChange={(e) => setPurpose(e.target.value)}
+                      className="h-[54px] w-full appearance-none rounded-lg border border-[#d8c5ff] bg-white px-4 pr-10 text-base font-semibold text-[#071d3a] outline-none focus:border-[#8048e2]"
+                    >
+                      <option value="">Select option</option>
+                      <option value="Debt Consolidation">Debt Consolidation</option>
+                      <option value="Medical Emergency">Medical Emergency</option>
+                      <option value="Education Expenses">Education Expenses</option>
+                      <option value="Wedding">Wedding</option>
+                      <option value="Travel">Travel</option>
+                      <option value="Home Renovation">Home Renovation</option>
+                      <option value="Other Personal Needs">Other Personal Needs</option>
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#4d6380]" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Any running loan? <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setHasLoan("no")}
+                      className={`h-[47px] rounded-lg border text-sm font-bold transition ${hasLoan === "no"
+                          ? "border-[#8048e2] bg-[#8048e2] text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)]"
+                          : "border-[#d8c5ff] bg-white text-[#62718a]"
+                        }`}
+                    >
+                      No
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setHasLoan("yes")}
+                      className={`h-[47px] rounded-lg border text-sm font-bold transition ${hasLoan === "yes"
+                          ? "border-[#8048e2] bg-[#8048e2] text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)]"
+                          : "border-[#d8c5ff] bg-white text-[#62718a]"
+                        }`}
+                    >
+                      Yes
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Phone <span className="text-red-500">*</span>
+                  </label>
+
+                  <div className="mt-3 flex h-[54px] overflow-hidden rounded-lg border border-[#168544] bg-white">
+                    <span className="flex items-center gap-1 border-r border-[#d9e3f0] bg-[#f8fafc] px-2 text-sm font-semibold text-[#071d3a]">
+                      <span>IN</span>
+                      <span>+91</span>
+                      <ChevronDown className="h-3 w-3 text-[#4d6380]" />
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={phone}
+                      onChange={(e) => setPhone(digitsOnly(e.target.value).slice(0, 10))}
+                      placeholder="9976237656"
+                      className="min-w-0 flex-1 px-3 text-sm font-semibold text-[#071d3a] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-[#071d3a]">
+                    Email <span className="text-[#718096]"></span>
+                  </label>
+
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="test@gmail.com"
+                    className="mt-3 h-[54px] w-full rounded-lg border border-[#d8c5ff] bg-[#fff] px-4 text-sm font-semibold text-[#071d3a] outline-none focus:border-[#8048e2]"
+                  />
+                </div>
+
+
+              </div>
+
+              <label className="mt-5 flex items-start gap-3 text-sm font-medium leading-6 text-[#52657d]">
+                <input
+                  type="checkbox"
+                  checked={agree}
+                  onChange={() => setAgree(!agree)}
+                  className="mt-1 h-4 w-4 rounded border-[#b9c8dc] accent-[#8048e2]"
+                />
+                <span>
+                  I agree to the{" "}
+                  <span className="font-semibold text-[#155ed0]">Terms</span>,{" "}
+                  <span className="font-semibold text-[#155ed0]">Privacy Policy</span>,
+                  KYC checks, and OTP verification.
+                </span>
+              </label>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="mt-7 h-12 w-full rounded-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-sm font-bold text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)] transition hover:opacity-90 disabled:opacity-60"
+              >
+                {loading ? "Sending..." : "Send OTP"}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
 

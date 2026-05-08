@@ -1,105 +1,213 @@
-import { Facebook, Instagram, ArrowRight } from "lucide-react";
+import {
+  AlertTriangle,
+  BadgeHelp,
+  BriefcaseBusiness,
+  FileText,
+  HelpCircle,
+  Home,
+  Info,
+  LockKeyhole,
+  Mail,
+  MapPin,
+  PhoneCall,
+  ShieldCheck,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+
+const quickLinks = [
+  { name: "Home", link: "/", icon: Home },
+  { name: "Services", link: "/Services", icon: BriefcaseBusiness },
+  { name: "About Us", link: "/About", icon: Info },
+  { name: "Contact Us", link: "/Contact", icon: PhoneCall },
+  { name: "FAQs", link: "/Faqs", icon: HelpCircle },
+];
+
+const policies = [
+  { name: "Privacy Policy", link: "/Privacy-Policies", icon: LockKeyhole },
+  { name: "Terms & Conditions", link: "/terms-conditions", icon: FileText },
+  { name: "Grievance Redressal", link: "/grievance-redressal", icon: BadgeHelp },
+  { name: "Fair Practices Code", link: "/fair-practices-code", icon: FileText },
+];
+
+const contactItems = [
+  { label: "Call Us", value: "+91 9217086608", icon: PhoneCall },
+  { label: "Email", value: "support@waqtmoney.com", icon: Mail },
+  { label: "Address", value: "H-15, Sector 63, Noida (UP)", icon: MapPin },
+];
 
 const Footer = () => {
   return (
-    <footer className="bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#020617] text-white pt-16 pb-8 rounded-t-3xl">
-      <div className="container mx-auto px-4">
+    <footer className="w-full border-t border-purple-100 bg-[#faf9ff] text-slate-900">
+      <div className="h-1 bg-gradient-to-r from-purple-600 via-violet-500 to-orange-400" />
 
-        {/* TOP GRID */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
-
-          {/* BRAND */}
-          <div>
-            <h3 className="text-xl font-bold mb-4">
-              Geet<span className="text-purple-400">Pay</span>
-            </h3>
-            <p className="text-sm text-gray-400 leading-relaxed mb-5">
-              A customer-centric NBFC making loans simple, fast & transparent.
-            </p>
-
-            {/* SOCIAL */}
-            <div className="flex gap-3">
-              {[Facebook, Instagram].map((Icon, i) => (
-                <a
-                  key={i}
-                  href="#"
-                  className="w-9 h-9 flex items-center justify-center rounded-full bg-white/5 hover:bg-purple-500/20 border border-white/10 transition-all"
-                >
-                  <Icon className="w-4 h-4" />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* BORROW */}
-          <div>
-            <h4 className="text-sm font-semibold mb-4 text-gray-200 tracking-wide">
-              BORROW
-            </h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              {["Personal Loan", "Instant Loan"].map((item, i) => (
-                <li key={i}>
-                  <a href="#" className="hover:text-white transition-all hover:pl-1">
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* COMPANY */}
-          <div>
-            <h4 className="text-sm font-semibold mb-4 text-gray-200 tracking-wide">
-              COMPANY
-            </h4>
-            <ul className="space-y-2 text-sm text-gray-400">
-              {["Our Story", "FAQs", "Our Product", "Contact Us"].map((item, i) => (
-                <li key={i}>
-                  <a href="#" className="hover:text-white transition-all hover:pl-1">
-                    {item}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* NEWSLETTER */}
-          <div>
-            <h4 className="text-sm font-semibold mb-4 text-gray-200 tracking-wide">
-              Stay Updated
-            </h4>
-
-            <div className="flex items-center bg-white/5 border border-white/10 rounded-full overflow-hidden">
-              <input
-                type="text"
-                placeholder="Enter email"
-                className="flex-1 bg-transparent px-4 py-3 text-sm outline-none text-white placeholder-gray-400"
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-[1.2fr_0.8fr_1fr_1.25fr]">
+          {/* Brand */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <Link to="/" className="mb-4 inline-flex w-fit items-center">
+              <img
+                src="/waqt-money-logo-img.png"
+                alt="WaqtMoney Logo"
+                className="h-20 w-auto object-contain md:h-40 md:-my-16"
               />
-              <button className="bg-purple-500 hover:bg-purple-600 px-4 py-4 transition-all">
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+            </Link>
 
-            <p className="text-xs text-gray-500 mt-3">
-              No spam. Only useful updates.
+            <p className="max-w-sm text-sm leading-6 text-slate-600">
+              Fast approvals, simple process, and secure digital loan support
+              for salaried customers. 
+             
             </p>
+            <p> </p>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <span className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm">
+                <ShieldCheck className="h-4 w-4 text-purple-600" />
+                Secure Process
+              </span>
+
+              <span className="inline-flex items-center gap-2 rounded-full border border-purple-100 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm">
+                <LockKeyhole className="h-4 w-4 text-orange-500" />
+                Data Protected
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <div>
+            <h4 className="mb-3 text-base font-semibold text-slate-950">
+              Quick Links
+            </h4>
+            <span className="mb-4 block h-0.5 w-10 bg-purple-600" />
+
+            <ul className="grid gap-3 text-sm text-slate-600">
+              {quickLinks.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <li key={item.name}>
+                    <Link
+                      to={item.link}
+                      className="inline-flex items-center gap-3 transition hover:text-purple-600"
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-purple-600" />
+                      <span>{item.name}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Policies */}
+          <div>
+            <h4 className="mb-3 text-base font-semibold text-slate-950">
+              Policies
+            </h4>
+            <span className="mb-4 block h-0.5 w-10 bg-orange-400" />
+
+            <ul className="grid gap-3 text-sm text-slate-600">
+              {policies.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <li key={item.name}>
+                    <Link
+                      to={item.link}
+                      className="inline-flex items-center gap-3 transition hover:text-purple-600"
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-orange-500" />
+                      <span>{item.name}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div className="sm:col-span-2 lg:col-span-1">
+            <h4 className="mb-3 text-base font-semibold text-slate-950">
+              Contact Info
+            </h4>
+            <span className="mb-4 block h-0.5 w-10 bg-purple-600" />
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              {contactItems.map((item) => {
+                const Icon = item.icon;
+
+                return (
+                  <div
+                    key={item.label}
+                    className="flex min-w-0 items-center gap-3 rounded-lg border border-purple-100 bg-white px-3 py-3 shadow-sm"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-50 text-purple-600">
+                      <Icon className="h-4 w-4" />
+                    </span>
+
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-500">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 break-words text-sm font-semibold leading-5 text-slate-900">
+                        {item.value}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        {/* BOTTOM BAR */}
-        <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-gray-400">
+        <div className="mt-8 rounded-xl border border-purple-100 bg-white/85 p-4 text-left shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+              <AlertTriangle className="h-5 w-5" />
+            </span>
 
-          
-
-          <div className="flex gap-5">
-            <a href="#" className="hover:text-white transition">Privacy Policy</a>
-            <a href="#" className="hover:text-white transition">Terms</a>
-            <a href="#" className="hover:text-white transition">Sitemap</a>
+            <div>
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-950">
+                Disclaimer
+              </h4>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Waqt Money facilitates loans in partnership with RBI-registered
+                Non-Banking Financial Companies (NBFCs) and other regulated
+                financial institutions. Loan sanction, amount, interest rate,
+                and disbursal are subject to the applicant's eligibility and the
+                sole discretion of the lending partner. Customers are advised to
+                carefully review the applicable terms and conditions before
+                applying.
+              </p>
+            </div>
           </div>
-
-          <p>© 2026 GeetPay. All rights reserved.</p>
         </div>
 
+        {/* Bottom */}
+        <div className="mt-8 flex flex-col gap-3 border-t border-purple-100 pt-5 text-center text-xs text-slate-500 sm:text-left md:flex-row md:items-center md:justify-between">
+          <p>&copy; 2026 Waqt Money. All rights reserved.</p>
+              <p>NBFC Partner &nbsp;&nbsp;&nbsp; Waqt Finance Pvt Ltd  </p>
+          <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 md:justify-end">
+            {/* <Link
+              to="/Privacy-Policies"
+              className="transition hover:text-purple-600"
+            >
+              Privacy Policy
+            </Link>
+
+            <Link
+              to="/terms-conditions"
+              className="transition hover:text-purple-600"
+            >
+              Terms
+            </Link>
+
+            <Link to="/Contact" className="transition hover:text-purple-600">
+              Support
+            </Link> */}
+            
+            <p> RBI LICENCE NO. :B.10.00143</p>
+          </div>
+        </div>
       </div>
     </footer>
   );

@@ -14,12 +14,12 @@ const Login = () => {
     <div className="min-h-screen flex flex-col bg-white pt-20">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center px-4 py-10">
+      <div className="flex-1 flex items-center justify-center px-3 py-8 sm:px-4 sm:py-10">
         {/* ✅ Responsive container */}
-        <div className="w-full max-w-5xl min-h-[500px] bg-white rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl border">
+        <div className="flex min-h-0 w-full max-w-5xl flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl md:min-h-[500px] md:flex-row">
 
           {/* LEFT SIDE */}
-          <div className="w-full md:w-1/2 bg-gradient-to-br from-purple-700 to-purple-500 text-white flex flex-col justify-center items-center text-center p-8">
+          <div className="flex w-full flex-col items-center justify-center bg-gradient-to-br from-purple-700 to-purple-500 p-6 text-center text-white sm:p-8 md:w-1/2">
             <ShieldCheck className="w-12 h-12 mb-4" />
             <h1 className="text-xl md:text-2xl font-bold">Paday Lona</h1>
             <p className="text-sm mt-1">Secure Login System</p>
@@ -115,7 +115,7 @@ const Login = () => {
             </div>
 
             {/* ✅ Mobile (no slider, clean UI) */}
-            <div className="md:hidden p-6">
+            <div className="p-5 sm:p-6 md:hidden">
               {!moved ? (
                 <>
                   <h2 className="text-center text-lg font-semibold mb-5 flex items-center justify-center gap-2">

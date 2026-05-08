@@ -11,6 +11,7 @@ const Navbar = () => {
     { name: "Home", path: "/" },
     { name: "Services", path: "/Services" },
     { name: "Faqs", path: "/Faqs" },
+    { name: "EMI Calculator", path: "/Emi-Calculator" },
     { name: "Policies", path: "/Policies" },
     { name: "About", path: "/About" },
     { name: "Contact", path: "/Contact" },
@@ -59,9 +60,9 @@ const Navbar = () => {
         {/* Logo */}
         <Link to="/">
           <img
-            src="/GeetPay-logo-img.png"
+            src="/waqt-money-logo-img.png"
             className="w-40 md:w-48 h-auto object-contain"
-            alt="GeetPay-logo"
+            alt="waqt-logo"
           />
         </Link>
 

@@ -10,7 +10,11 @@ export const addLoan = async (req, res, next) => {
 
     const result = await createLoan(req.body);
 
-    res.json({ message: "Loan saved", id: result.insertId });
+    res.status(201).json({
+      success: true,
+      message: "Loan saved",
+      data: { id: req.body.id || result.insertId },
+    });
   } catch (err) {
     next(err);
   }

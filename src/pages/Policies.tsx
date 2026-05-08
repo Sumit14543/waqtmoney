@@ -1,58 +1,92 @@
-import React from "react";
+import Footer from "@/components/Footer";
 import Navbar from "@/components/Navbar";
 import {
-  ShieldCheck,
-  Database,
-  Lock,
-  Users,
-  FileText,
+  CheckCircle2,
   Cookie,
+  Database,
+  FileText,
+  Lock,
+  Mail,
   RefreshCcw,
-  Mail
+  ShieldCheck,
+  Users,
 } from "lucide-react";
-import Footer from "@/components/Footer";
 
-const policies = [
+const sections = [
   {
+    id: "information",
     icon: Database,
     title: "Information We Collect",
-    desc: "We collect personal, financial, and KYC details like Name, Phone, Email, PAN, Aadhaar, income & bank details to process your loan securely."
+    points: [
+      "Personal details like name, mobile number, email, PAN, Aadhaar, address, and date of birth.",
+      "Financial details like income, employment information, bank details, and requested loan amount.",
+      "Technical details like device information, browser type, IP address, cookies, and website usage data.",
+    ],
   },
   {
+    id: "usage",
     icon: Users,
-    title: "How We Use Data",
-    desc: "Your data is used for loan approval, identity verification, improving services, and sending important updates related to your account."
+    title: "How We Use Your Data",
+    points: [
+      "To verify your identity, check eligibility, process applications, and provide customer support.",
+      "To send important updates related to your loan application, repayment, and account activity.",
+      "To improve our services, website experience, fraud prevention, and security systems.",
+    ],
   },
   {
+    id: "sharing",
     icon: ShieldCheck,
     title: "Data Sharing",
-    desc: "We do not sell your data. It is only shared with trusted NBFC partners, credit bureaus, or authorities if required by law."
+    points: [
+      "We do not sell your personal information.",
+      "Information may be shared with lending partners, NBFC partners, credit bureaus, verification agencies, payment partners, or regulators when required.",
+      "Only the information needed to provide, verify, secure, or improve our services is shared.",
+    ],
   },
   {
+    id: "security",
     icon: Lock,
     title: "Data Security",
-    desc: "We use advanced encryption and secure systems to protect your personal and financial data from unauthorized access."
+    points: [
+      "We use reasonable technical, administrative, and physical safeguards to protect your information.",
+      "Sensitive information is handled through secured systems and access controls.",
+      "No online platform can guarantee absolute security, but we continuously work to reduce risk.",
+    ],
   },
   {
+    id: "cookies",
     icon: Cookie,
-    title: "Cookies Usage",
-    desc: "We use cookies to enhance your browsing experience, analyze traffic, and improve our website performance."
+    title: "Cookies",
+    points: [
+      "We may use cookies to remember preferences, analyze website traffic, and improve performance.",
+      "You can manage or disable cookies from your browser settings.",
+    ],
   },
   {
+    id: "rights",
     icon: FileText,
     title: "Your Rights",
-    desc: "You can request access, correction, or deletion of your data and opt-out from marketing communications anytime."
+    points: [
+      "You may request access, correction, or deletion of your personal information, subject to legal requirements.",
+      "You can opt out of promotional communication while still receiving important service messages.",
+    ],
   },
   {
+    id: "updates",
     icon: RefreshCcw,
     title: "Policy Updates",
-    desc: "We may update this policy occasionally. All updates will be reflected on this page for transparency."
+    points: [
+      "We may update this Privacy Policy from time to time.",
+      "All changes will be posted on this page with an updated effective date.",
+    ],
   },
-  {
-    icon: Mail,
-    title: "Contact Us",
-    desc: "For any privacy concerns, reach out to us at support@geetpay.in"
-  }
+];
+
+const highlights = [
+  "No sale of personal data",
+  "Secure digital verification",
+  "Limited partner sharing",
+  "User data rights supported",
 ];
 
 export default function Policies() {
@@ -60,105 +94,128 @@ export default function Policies() {
     <>
       <Navbar />
 
-      <section className="bg-background  dark:bg-slate-900 py-20 px-4">
+      <main className="bg-gradient-to-b from-white via-[#fbf9ff] to-white pt-24">
+        <section className="container mx-auto px-4 py-12 md:py-16">
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-purple-50 px-4 py-2 text-sm font-semibold text-purple-700">
+              <ShieldCheck className="h-4 w-4" />
+              Privacy & Data Protection
+            </div>
 
-        {/* HERO */}
-        <div className="max-w-4xl pt-20 mx-auto text-center mb-20">
-          
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white">
-             Your Privacy, <span className="text-primary"> Our Responsibility </span>
-            </h2>
+            <h1 className="text-4xl font-bold leading-tight text-slate-950 md:text-5xl">
+              Privacy <span className="text-gradient">Policy</span>
+            </h1>
 
-          <p className="mt-4 text-lg text-muted-foreground">
-           
-            we ensure your personal and financial data <br /> stays safe with bank-level security.
-          </p>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 md:text-lg">
+              This policy explains how WaqtMoney collects, uses, protects, and
+              shares your information when you use our website and loan services.
+            </p>
 
-         
-        </div>
+            {/* <div className="mt-6 flex flex-wrap justify-center gap-3 text-sm">
+              <span className="rounded-full border border-purple-100 bg-white px-4 py-2 font-medium text-slate-700 shadow-sm">
+                Effective Date: 04 May 2026
+              </span>
+              <span className="rounded-full border border-orange-100 bg-white px-4 py-2 font-medium text-slate-700 shadow-sm">
+                WaqtMoney Services
+              </span>
+            </div> */}
+          </div>
 
-        {/* CARDS */}
-        <div className="max-w-6xl mx-auto grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {policies.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div
-                key={index}
-                className="relative group bg-white/60 backdrop-blur-xl border border-purple-100 dark:border-slate-700 rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:-translate-y-2 hover:scale-105 transition-all duration-300"
-              >
-            
-
-                {/* Icon */}
-                <div className="w-14 h-14 flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 text-white mb-5 group-hover:scale-110 transition">
-                  <Icon size={26} />
-                </div>
-
-                <h3 className="text-xl font-semibold mb-3 text-gray-800 dark:text-white">
-                  {item.title}
-                </h3>
-
-                <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">
-                  {item.desc}
-                </p>
+          <div className="mt-10 grid gap-8 lg:grid-cols-[280px_1fr]">
+            <aside className="lg:sticky lg:top-24 lg:self-start">
+              <div className="rounded-xl border border-purple-100 bg-white p-5 shadow-sm">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-900">
+                  On This Page
+                </h2>
+                <nav className="mt-4 space-y-2">
+                  {sections.map((section) => (
+                    <a
+                      key={section.id}
+                      href={`#${section.id}`}
+                      className="block rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-purple-50 hover:text-purple-700"
+                    >
+                      {section.title}
+                    </a>
+                  ))}
+                </nav>
               </div>
-            );
-          })}
-        </div>
 
-        {/* TIMELINE */}
-        <div className="max-w-4xl mx-auto mt-24">
-          <h2 className="text-2xl font-bold text-center mb-10 text-purple-600">
-            How We Handle Your Data
-          </h2>
+              <div className="mt-5 rounded-xl border border-purple-100 bg-white p-5 shadow-sm">
+                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-900">
+                  Key Points
+                </h2>
+                <ul className="mt-4 space-y-3">
+                  {highlights.map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-start gap-2 text-sm text-slate-600"
+                    >
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-purple-600" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </aside>
 
-          {policies.map((item, index) => {
-            const Icon = item.icon;
-            return (
-              <div key={index} className="flex gap-6 mb-10">
-                <div className="flex flex-col items-center">
-                  <div className="bg-purple-500 text-white p-3 rounded-full shadow">
-                    <Icon size={18} />
+            <div className="space-y-5">
+              {sections.map((section) => {
+                const Icon = section.icon;
+
+                return (
+                  <section
+                    key={section.id}
+                    id={section.id}
+                    className="scroll-mt-28 rounded-xl border border-purple-100 bg-white p-5 shadow-sm md:p-7"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-purple-50 text-purple-700">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <h2 className="text-xl font-bold text-slate-950">
+                        {section.title}
+                      </h2>
+                    </div>
+
+                    <ul className="mt-5 space-y-3">
+                      {section.points.map((point) => (
+                        <li
+                          key={point}
+                          className="flex gap-3 text-sm leading-7 text-slate-600"
+                        >
+                          <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-orange-400" />
+                          {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                );
+              })}
+
+              <section className="rounded-xl border border-purple-100 bg-gradient-to-r from-purple-600 to-violet-600 p-5 text-white shadow-sm md:p-7">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold">Privacy Questions?</h2>
+                    <p className="mt-2 text-sm leading-6 text-purple-50">
+                      For privacy concerns, corrections, or data requests,
+                      contact our support team.
+                    </p>
                   </div>
-                  <div className="w-1 bg-purple-200 flex-1"></div>
+                  <a
+                    href="mailto:support@waqtmoney.com"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-white px-5 text-sm font-semibold text-purple-700 transition hover:bg-purple-50"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email Support
+                  </a>
                 </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </main>
 
-                <div>
-                  <h4 className="font-semibold text-lg text-gray-800 dark:text-white">
-                    {item.title}
-                  </h4>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* CTA */}
-        <div className="text-center mt-20">
-          <h2 className="text-2xl font-bold mb-4 text-purple-600">
-            Need Help With Your Loan?
-          </h2>
-
-          <p className="text-gray-600 mb-6">
-            Our support team is always ready to assist you.
-          </p>
-
-          <button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-3 rounded-xl hover:opacity-90 hover:scale-105 transition shadow-lg">
-            Contact Support
-          </button>
-        </div>
-
-        {/* Footer Note */}
-        <div className="max-w-3xl mx-auto text-center mt-12">
-          <p className="text-gray-500 text-sm">
-            By using GeetPay, you agree to our privacy practices and policies.
-          </p>
-        </div>
-
-      </section>
-      <Footer/>
+      <Footer />
     </>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { BadgeIndianRupee } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -99,23 +100,33 @@ const LoanForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#f3f6fa]">
       <Navbar />
 
-      <div className="flex flex-1 justify-center items-center px-4 py-20">
-        <div className="w-full max-w-lg bg-white p-8 rounded-2xl shadow">
+      <div className="flex flex-1 items-center justify-center px-3 py-24 sm:px-4">
+        <div className="w-full max-w-[520px] overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_18px_60px_rgba(32,56,85,0.10)]">
 
-          <h2 className="text-3xl font-semibold text-center text-[#7e47e2] mb-6">
-            Apply for a Loan
-          </h2>
+          <div className="border-b border-[#dfe7f2] px-6 py-7 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3eaff]">
+              <BadgeIndianRupee className="h-7 w-7 text-[#8048e2]" />
+            </div>
+            <h2 className="mt-4 text-xl font-bold text-[#071d3a]">
+              Apply for a Loan
+            </h2>
+            <p className="mt-2 text-sm font-medium text-[#52657d]">
+              Share your loan requirement to continue.
+            </p>
+          </div>
+
+          <div className="px-5 py-7 sm:px-7 sm:py-8">
 
           {/* Amount */}
           <div className="mb-5">
-            <label className="block mb-2 text-sm font-medium text-gray-700">
+            <label className="block text-sm font-bold text-[#071d3a]">
               How much money you want to borrow?
             </label>
 
-            <div className="flex items-center border rounded-lg h-11">
+            <div className="mt-2 flex h-[52px] items-center overflow-hidden rounded-lg border border-[#d8c5ff] focus-within:border-[#8048e2]">
               <span className="px-3 text-gray-400 border-r">₹</span>
               <input
                 type="tel"
@@ -127,7 +138,7 @@ const LoanForm = () => {
                   setAmount(formatAmount(raw));
                 }}
                 placeholder="Enter amount"
-                className="w-full px-3 outline-none"
+                className="min-w-0 flex-1 px-4 text-sm font-semibold text-[#071d3a] outline-none"
               />
             </div>
 
@@ -138,14 +149,14 @@ const LoanForm = () => {
 
           {/* Purpose */}
           <div className="mb-5">
-            <label className="block mb-2 text-sm font-medium text-gray-700">
+            <label className="block text-sm font-bold text-[#071d3a]">
               Purpose of Loan?
             </label>
 
             <select
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
-              className="w-full p-3 border rounded-lg"
+              className="mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] bg-white px-4 text-sm font-semibold text-[#071d3a] outline-none focus:border-[#8048e2]"
             >
               <option value="">Select Purpose</option>
               <option value="marriage">Marriage</option>
@@ -161,12 +172,12 @@ const LoanForm = () => {
 
           {/* Loan */}
           <div className="mb-6">
-            <label className="block mb-3 text-sm font-medium text-gray-700">
+            <label className="block text-sm font-bold text-[#071d3a]">
               Do you have any running loan?
             </label>
 
-            <div className="flex gap-10">
-              <label className="flex items-center gap-2">
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <label className={`flex h-[45px] items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${hasLoan === "yes" ? "border-[#8048e2] bg-[#8048e2] text-white" : "border-[#d8c5ff] bg-white text-[#52657d]"}`}>
                 <input
                   type="radio"
                   name="loan"
@@ -177,7 +188,7 @@ const LoanForm = () => {
                 Yes
               </label>
 
-              <label className="flex items-center gap-2">
+              <label className={`flex h-[45px] items-center justify-center gap-2 rounded-lg border text-sm font-bold transition ${hasLoan === "no" ? "border-[#8048e2] bg-[#8048e2] text-white" : "border-[#d8c5ff] bg-white text-[#52657d]"}`}>
                 <input
                   type="radio"
                   name="loan"
@@ -199,11 +210,11 @@ const LoanForm = () => {
             type="button"
             onClick={handleSubmit}
             disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-white font-medium rounded-lg hover:opacity-90 transition disabled:opacity-50"
+            className="h-[52px] w-full rounded-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-sm font-bold text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)] transition hover:opacity-90 disabled:opacity-50"
           >
             {loading ? "Processing..." : "Continue"}
           </button>
-
+          </div>
         </div>
       </div>
 

@@ -1,19 +1,117 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { Landmark } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useNavigate } from "react-router-dom";
+import UserProgress from "./UserProgress";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api";
+const IFSC_REGEX = /^[A-Z]{4}0[A-Z0-9]{6}$/;
 
 const BankDetails = () => {
   const [form, setForm] = useState({
+    ifsc: "",
     bankName: "",
+    branchName: "",
+    city: "",
+    state: "",
+    address: "",
     holderName: "",
     accountNumber: "",
-    ifsc: "",
   });
 
   const [errors, setErrors] = useState<any>({});
+  const [loading, setLoading] = useState(false);
+  const [ifscLoading, setIfscLoading] = useState(false);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const applicationId =
+      sessionStorage.getItem("applicationId") || localStorage.getItem("applicationId");
+
+    if (!applicationId) return;
+
+    sessionStorage.setItem("applicationId", applicationId);
+
+    fetch(`${API_BASE_URL}/application/${applicationId}`)
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.message || "Failed to load bank details");
+        }
+
+        return result.data || {};
+      })
+      .then((data) => {
+        setForm((current) => ({
+          ...current,
+          ifsc: data.ifsc_code || "",
+          bankName: data.bank_name || "",
+          branchName: data.branch_name || "",
+          holderName: data.account_holder || "",
+          accountNumber: data.account_number || "",
+        }));
+      })
+      .catch((error) => {
+        console.error("Bank details load error:", error);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (form.ifsc.length !== 11) return;
+
+    if (!IFSC_REGEX.test(form.ifsc)) {
+      setErrors((current: any) => ({ ...current, ifsc: "Invalid IFSC format" }));
+      return;
+    }
+
+    const controller = new AbortController();
+    setIfscLoading(true);
+    setErrors((current: any) => ({ ...current, ifsc: undefined, bankName: undefined }));
+
+    fetch(`${API_BASE_URL}/application/ifsc/${form.ifsc}`, {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.message || "IFSC not found");
+        }
+
+        return result.data || {};
+      })
+      .then((data) => {
+        setForm((current) => ({
+          ...current,
+          bankName: data.bank || "",
+          branchName: data.branch || "",
+          city: data.city || "",
+          state: data.state || "",
+          address: data.address || "",
+        }));
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") return;
+        console.error("IFSC lookup error:", error);
+        setErrors((current: any) => ({ ...current, ifsc: error.message || "IFSC not found" }));
+        setForm((current) => ({
+          ...current,
+          bankName: "",
+          branchName: "",
+          city: "",
+          state: "",
+          address: "",
+        }));
+      })
+      .finally(() => {
+        setIfscLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [form.ifsc]);
 
   const handleChange = (e: any) => {
     let { name, value } = e.target;
@@ -25,10 +123,11 @@ const BankDetails = () => {
 
     // uppercase IFSC
     if (name === "ifsc") {
-      value = value.toUpperCase();
+      value = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11);
     }
 
     setForm({ ...form, [name]: value });
+    setErrors({ ...errors, [name]: undefined, submit: undefined });
   };
 
   const validate = () => {
@@ -37,8 +136,10 @@ const BankDetails = () => {
     // Bank Name
     if (!form.bankName.trim()) {
       newErrors.bankName = "Bank name is required";
-    } else if (!/^[A-Za-z\s]+$/.test(form.bankName)) {
-      newErrors.bankName = "Only alphabets allowed";
+    }
+
+    if (!form.branchName.trim()) {
+      newErrors.branchName = "Branch name is required";
     }
 
     // Holder Name
@@ -66,52 +167,147 @@ const BankDetails = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault();
+    if (loading || ifscLoading) return;
 
-    if (validate()) {
-      navigate("/user/salary-slip");
+    if (!validate()) return;
+
+    const applicationId =
+      sessionStorage.getItem("applicationId") || localStorage.getItem("applicationId");
+
+    if (!applicationId) {
+      setErrors({ submit: "Application session not found. Please start again." });
+      return;
+    }
+
+    sessionStorage.setItem("applicationId", applicationId);
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/application/bank-details`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: applicationId,
+          ifsc: form.ifsc,
+          bankName: form.bankName,
+          branchName: form.branchName,
+          holderName: form.holderName.trim(),
+          accountNumber: form.accountNumber,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        setErrors({ submit: result.message || "Failed to save bank details" });
+        return;
+      }
+
+      navigate(result.data?.nextPath || "/user/references");
+    } catch (error) {
+      console.error("Bank details save error:", error);
+      setErrors({ submit: "Server not reachable" });
+    } finally {
+      setLoading(false);
     }
   };
 
   const inputClass =
-    "w-full p-3 border-2 border-[#8048e2] rounded-md outline-none focus:border-[#bd56e4]";
+    "mt-2 h-[52px] w-full rounded-lg border border-[#d8c5ff] px-4 text-sm font-semibold text-[#071d3a] outline-none focus:border-[#8048e2]";
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#f3f6fa]">
 
       <Navbar />
 
-      <div className="flex-1">
-        <div className="max-w-[520px] mx-auto mt-10 px-5 py-8 font-sans">
+      <div className="flex-1 px-4 pb-16 pt-24 md:pt-28">
+        <UserProgress activeStep={5} />
 
-          <h1 className="text-center text-2xl font-bold text-[#8048e2] mt-14">
-            Bank Details
-          </h1>
+        <form
+          onSubmit={handleSubmit}
+          className="mx-auto w-full max-w-[520px] overflow-hidden rounded-2xl border border-[#dfe7f2] bg-white shadow-[0_18px_60px_rgba(32,56,85,0.10)]"
+        >
+          <div className="border-b border-[#dfe7f2] px-6 py-7 text-center">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f3eaff]">
+              <Landmark className="h-7 w-7 text-[#8048e2]" />
+            </div>
+            <h1 className="mt-4 text-xl font-bold text-[#071d3a]">
+              Bank Details
+            </h1>
+            <p className="mt-2 text-sm font-medium text-[#52657d]">
+              Your Data is Completely Secure with us
+            </p>
+          </div>
 
-          <p className="text-center text-sm text-gray-500 mb-6">
-            Your Data is Completely Secure with us
-          </p>
+          <div className="px-5 py-7 sm:px-7 sm:py-8">
 
-          <form onSubmit={handleSubmit}>
+            {errors.submit && (
+              <p className="mb-5 rounded-lg border border-red-100 bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-600">
+                {errors.submit}
+              </p>
+            )}
+
+            {/* IFSC */}
+            <div className="mb-4">
+              <label className="text-sm font-bold text-[#071d3a]">IFSC Code</label>
+              <input
+                name="ifsc"
+                value={form.ifsc}
+                onChange={handleChange}
+                maxLength={11}
+                className={inputClass}
+                placeholder="e.g. SBIN0001234"
+              />
+              {ifscLoading && <p className="mt-1 text-xs text-[#8048e2]">Fetching bank details...</p>}
+              {errors.ifsc && <p className="text-red-500 text-xs">{errors.ifsc}</p>}
+            </div>
 
             {/* Bank Name */}
             <div className="mb-4">
-              <label>Bank Name</label>
-              <input name="bankName" onChange={handleChange} className={inputClass} />
+              <label className="text-sm font-bold text-[#071d3a]">Bank Name</label>
+              <input
+                name="bankName"
+                value={ifscLoading ? "Fetching..." : form.bankName}
+                readOnly
+                className={`${inputClass} bg-[#f8fafc]`}
+              />
               {errors.bankName && <p className="text-red-500 text-xs">{errors.bankName}</p>}
             </div>
 
+            {/* Branch Name */}
+            <div className="mb-4">
+              <label className="text-sm font-bold text-[#071d3a]">Branch Name</label>
+              <input
+                name="branchName"
+                value={ifscLoading ? "Fetching..." : form.branchName}
+                readOnly
+                className={`${inputClass} bg-[#f8fafc]`}
+              />
+              {errors.branchName && <p className="text-red-500 text-xs">{errors.branchName}</p>}
+            </div>
+
+            {(form.city || form.state || form.address) && (
+              <div className="mb-4 rounded-lg border border-[#d8c5ff] bg-[#f8fafc] px-4 py-3 text-left text-xs font-semibold leading-5 text-[#52657d]">
+                {(form.city || form.state) && <p>{[form.city, form.state].filter(Boolean).join(", ")}</p>}
+                {form.address && <p className="mt-1">{form.address}</p>}
+              </div>
+            )}
+
             {/* Holder Name */}
             <div className="mb-4">
-              <label>Account Holder Name</label>
-              <input name="holderName" onChange={handleChange} className={inputClass} />
+              <label className="text-sm font-bold text-[#071d3a]">Account Holder Name</label>
+              <input name="holderName" value={form.holderName} onChange={handleChange} className={inputClass} />
               {errors.holderName && <p className="text-red-500 text-xs">{errors.holderName}</p>}
             </div>
 
             {/* Account Number */}
             <div className="mb-4">
-              <label>Account Number</label>
+              <label className="text-sm font-bold text-[#071d3a]">Account Number</label>
               <input
                 name="accountNumber"
                 value={form.accountNumber}
@@ -124,31 +320,16 @@ const BankDetails = () => {
               {errors.accountNumber && <p className="text-red-500 text-xs">{errors.accountNumber}</p>}
             </div>
 
-            {/* IFSC */}
-            <div className="mb-4">
-              <label>IFSC Code</label>
-              <input
-                name="ifsc"
-                value={form.ifsc}
-                onChange={handleChange}
-                maxLength={11}
-                className={inputClass}
-                placeholder="e.g. SBIN0001234"
-              />
-              {errors.ifsc && <p className="text-red-500 text-xs">{errors.ifsc}</p>}
-            </div>
-
             {/* Submit */}
             <button
               type="submit"
-              className="w-full text-white py-3 mt-3 font-semibold rounded-md bg-gradient-to-r from-[#8048e2] to-[#bd56e4] hover:opacity-90 transition"
+              disabled={loading || ifscLoading}
+              className="mt-3 h-[52px] w-full rounded-lg bg-gradient-to-r from-[#8048e2] to-[#bd56e4] text-sm font-bold text-white shadow-[0_9px_18px_rgba(128,72,226,0.22)] transition hover:opacity-90"
             >
-              Submit
+              {loading ? "Saving..." : "Submit"}
             </button>
-
-          </form>
-
-        </div>
+          </div>
+        </form>
       </div>
 
       <Footer />

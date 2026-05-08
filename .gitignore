@@ -1,0 +1,49 @@
+# Dependencies
+node_modules/
+Server/node_modules/
+
+# Build output
+dist/
+dist-ssr/
+build/
+Server/dist/
+
+# Environment files
+.env
+.env.*
+!.env.example
+Server/.env
+Server/.env.*
+!Server/.env.example
+*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime/generated backend files
+Server/uploads/
+Server/cache/
+
+# Test and coverage
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

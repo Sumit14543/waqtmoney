@@ -9,16 +9,16 @@ const Faqs = () => {
 
    const faqs = [
   {
-    question: "What is a Payday Loan at GeetPay?",
-    answer: "GeetPay provides short-term payday loans that help you access a portion of your upcoming salary before your payday. It is designed for salaried individuals who need quick funds for urgent expenses without lengthy paperwork or delays."
+    question: "What is a Payday Loan at WaqtMoney ?",
+    answer: "WaqtMoney  provides short-term payday loans that help you access a portion of your upcoming salary before your payday. It is designed for salaried individuals who need quick funds for urgent expenses without lengthy paperwork or delays."
   },
   {
-    question: "Who can apply for a GeetPay loan?",
+    question: "Who can apply for a WaqtMoney  loan?",
     answer: "Any salaried employee aged between 21 to 60 years with a stable monthly income can apply. Applicants must have a valid bank account, PAN card, Aadhaar card, and a steady employment record."
   },
   {
     question: "How much loan amount can I get?",
-    answer: "You can avail loans ranging from ₹5,000 to ₹2,00,000 depending on your salary, repayment capacity, and credit profile. GeetPay ensures flexible limits to suit your financial needs."
+    answer: "You can avail loans ranging from ₹5,000 to ₹2,00,000 depending on your salary, repayment capacity, and credit profile. WaqtMoney  ensures flexible limits to suit your financial needs."
   },
   {
     question: "How quickly will I receive the loan?",
@@ -29,8 +29,8 @@ const Faqs = () => {
     answer: "Basic documents include Aadhaar Card, PAN Card, recent salary slips, and bank statements. In most cases, the process is completely digital with minimal paperwork."
   },
   {
-    question: "Is GeetPay safe and secure?",
-    answer: "Yes, GeetPay uses advanced encryption and secure systems to protect your personal and financial data. Your information is never shared without consent."
+    question: "Is WaqtMoney  safe and secure?",
+    answer: "Yes, WaqtMoney  uses advanced encryption and secure systems to protect your personal and financial data. Your information is never shared without consent."
   },
   {
     question: "What is the repayment tenure?",
@@ -38,7 +38,7 @@ const Faqs = () => {
   },
   {
     question: "Are there any hidden charges?",
-    answer: "No, GeetPay maintains full transparency. All fees, interest rates, and charges are clearly communicated before loan approval."
+    answer: "No, WaqtMoney  maintains full transparency. All fees, interest rates, and charges are clearly communicated before loan approval."
   },
   {
     question: "What happens if I miss a repayment?",
@@ -46,15 +46,15 @@ const Faqs = () => {
   },
   {
     question: "Can I apply multiple times?",
-    answer: "Yes, you can apply again after successfully repaying your previous loan. GeetPay also rewards responsible borrowers with higher limits and better offers."
+    answer: "Yes, you can apply again after successfully repaying your previous loan. WaqtMoney  also rewards responsible borrowers with higher limits and better offers."
   },
   {
     question: "Is there any credit score requirement?",
-    answer: "While a good credit score improves approval chances, GeetPay also considers other factors like income stability and repayment capacity."
+    answer: "While a good credit score improves approval chances, WaqtMoney  also considers other factors like income stability and repayment capacity."
   },
   {
     question: "How do I apply for a loan?",
-    answer: "You can apply directly through the GeetPay website by filling out a simple online form. The process takes only a few minutes to complete."
+    answer: "You can apply directly through the WaqtMoney ay website by filling out a simple online form. The process takes only a few minutes to complete."
   }
 
     ]
