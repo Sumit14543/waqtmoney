@@ -7,6 +7,7 @@ dist/
 dist-ssr/
 build/
 Server/dist/
+*.tsbuildinfo
 
 # Environment files
 .env
@@ -16,6 +17,8 @@ Server/.env
 Server/.env.*
 !Server/.env.example
 *.local
+!.env.*.example
+!Server/.env.*.example
 
 # Logs
 logs/
@@ -29,6 +32,19 @@ lerna-debug.log*
 # Runtime/generated backend files
 Server/uploads/
 Server/cache/
+uploads/
+cache/
+
+# Archives and generated documents
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+tmp-*
+*.tmp
+*.temp
 
 # Test and coverage
 coverage/
